@@ -1,38 +1,26 @@
 #!/usr/bin/env python
 import logging
 import os
-from src.server_connection import ServerConnection
+from src.joiner import Joiner
 from src.middleware import Middleware
 
 from os import listdir
 from os.path import isfile, join
 
-PATH = './data'
-
-CATEGORY_SUBFIX = '_category_id.json'
-DATA_SUBFIX = '_youtube_trending_data.csv'
-
-onlyfiles = [f for f in listdir(PATH) if isfile(join(PATH, f))]
-
-category_files = [item
-                  for item in onlyfiles if CATEGORY_SUBFIX in item]
-
-raw_data_files = [item.replace(CATEGORY_SUBFIX, '') for item in category_files]
-
 
 def main():
 
-    initialize_log(os.getenv("LOGGING_LEVEL") or 'DEBUG')
+    initialize_log(os.getenv("LOGGING_LEVEL") or 'INFO')
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.info("Client starting work")
+    logging.info("Jointer starting work")
 
     # Initialize server and start server loop
     middleware = Middleware()
-    server = ServerConnection(middleware, PATH, category_files, raw_data_files)
+    worker = Joiner(middleware)
 
-    server.run()
+    worker.run()
 
     logging.info(
         'Bye bye!')

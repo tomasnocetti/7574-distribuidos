@@ -1,0 +1,21 @@
+version: "3"
+services:
+  # Update this to the name of the service you want to work with in your docker-compose.yml file
+  client:
+    volumes:
+      # Update this to wherever you want VS Code to mount the folder of your project
+      - ./client:/workspace
+      - ./common:/workspace/common
+      - ./data:/workspace/data
+
+    # Overrides default command so things don't shut down after the process ends.
+    entrypoint: /bin/sh -c "while sleep 1000; do :; done"
+
+  joiner:
+    volumes:
+      # Update this to wherever you want VS Code to mount the folder of your project
+      - ./joiner:/workspace
+      - ./common:/workspace/common
+
+    # Overrides default command so things don't shut down after the process ends.
+    entrypoint: /bin/sh -c "while sleep 1000; do :; done"

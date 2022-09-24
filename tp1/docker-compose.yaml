@@ -11,10 +11,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: none
   client:
     container_name: client
-    image: client:latest
+    build:
+      context: ./
+      dockerfile: ./client/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+    volumes:
+      - ./data:/client/data
+  joiner:
+    container_name: joiner
+    build:
+      context: ./
+      dockerfile: ./joiner/Dockerfile
     entrypoint: python3 /main.py
     depends_on:
       rabbitmq:
         condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
