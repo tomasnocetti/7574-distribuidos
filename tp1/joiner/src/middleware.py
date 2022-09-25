@@ -1,36 +1,29 @@
-import logging
-import os
-import pika
+from common.middleware import Middleware
 
 RAW_DATA_QUEUE = 'raw_data_queue'
 CATEGORIES_QUEUE = 'categories_queue'
+VIDEO_DATA_QUEUE = 'video_data'
 
 
-class Middleware():
+class JoinerMiddlware(Middleware):
     def __init__(self) -> None:
-        host = os.environ['RABBIT_SERVER_ADDRESS']
-
-        self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host))
-
-        self.channel = self.connection.channel()
-
+        super().__init__()
         self.raw_data_queue = self.channel.queue_declare(queue=RAW_DATA_QUEUE)
         self.categories_queue = self.channel.queue_declare(
             queue=CATEGORIES_QUEUE)
+        self.input_videos_queue = self.channel.queue_declare(
+            queue=VIDEO_DATA_QUEUE)
 
-    def __send_message(self, queue, message):
-        self.channel.basic_publish(exchange='',
-                                   routing_key=queue,
-                                   body=message)
+    def stop_recv_category_message(self):
+        super().stop_recv_message(self.cat_msg_tag)
 
     def recv_category_message(self, callback):
-        self.recv_message(CATEGORIES_QUEUE, lambda ch, method,
-                          properties, body: callback(body.decode()))
+        self.cat_msg_tag = super().recv_message(CATEGORIES_QUEUE, lambda ch, method,
+                                                properties, body: callback(body.decode()))
+
         self.channel.start_consuming()
 
-    def recv_message(self, queue, callback):
-        self.channel.basic_consume(queue, callback, auto_ack=True)
+    def recv_video_message(self, callback):
 
-    def close_connection(self):
-        self.connection.close()
+        self.cat_msg_tag = super().recv_message(VIDEO_DATA_QUEUE, lambda ch, method,
+                                                properties, body: callback(body.decode()))

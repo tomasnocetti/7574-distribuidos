@@ -26,13 +26,13 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
     volumes:
-      - ./data:/client/data
+      - ./data:/workspace/data
   joiner:
     container_name: joiner
     build:
       context: ./
       dockerfile: ./joiner/Dockerfile
-    entrypoint: python3 /main.py
+    entrypoint: python3 main.py
     depends_on:
       rabbitmq:
         condition: service_healthy

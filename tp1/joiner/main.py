@@ -2,10 +2,7 @@
 import logging
 import os
 from src.joiner import Joiner
-from src.middleware import Middleware
-
-from os import listdir
-from os.path import isfile, join
+from src.middleware import JoinerMiddlware
 
 
 def main():
@@ -17,10 +14,10 @@ def main():
     logging.info("Jointer starting work")
 
     # Initialize server and start server loop
-    middleware = Middleware()
+    middleware = JoinerMiddlware()
     worker = Joiner(middleware)
 
-    worker.run()
+    worker.start()
 
     logging.info(
         'Bye bye!')
