@@ -25,7 +25,7 @@ class Middleware():
         self.channel.basic_cancel(consumer_tag=consumer_tag)
 
     def recv_message(self, queue, callback):
-        return self.channel.basic_consume(queue, callback, auto_ack=True)
+        return self.channel.basic_consume(queue, callback)
 
     def close_connection(self):
         self.connection.close()

@@ -47,23 +47,30 @@ class ServerConnection():
 
     def send_processed_csv(self):
         for file_name in self.raw_data_files:
-            logging.info(f'Sending Raw Data File: {file_name}')
 
+            counter = 0
             with open(os.path.join(self.path, file_name)) as file:
                 csv_reader = csv.reader(file, delimiter=',')
 
                 # list to store the names of columns
                 list_of_column_names = next(csv_reader)
-                keep_iterating = True
 
-                while(keep_iterating):
+                while(True):
                     f = io.StringIO()
-                    keep_iterating = self.get_next_file_slice(
+                    lines = self.get_next_file_slice(
                         f, csv_reader, list_of_column_names)
+
+                    if(lines == 0):
+                        break
+
                     f.seek(0)
 
+                    counter += 1
                     message = FileMessage(file_name, f.read())
                     self.middleware.send_video_message(message.pack())
+
+                logging.info(
+                    f'Sending Raw Data File: {file_name}, total: {counter}')
 
     def get_next_file_slice(self, f, csv_reader, header) -> bool:
         writer = csv.writer(f)
@@ -71,13 +78,12 @@ class ServerConnection():
 
         counter = 0
         for el in csv_reader:
-            if(counter == self.LINES_BUFFER):
-                return True
-
             writer.writerow(el)
             counter += 1
+            if(counter == self.LINES_BUFFER):
+                return counter
 
-        return False
+        return counter
 
     def __exit_gracefully(self, *args):
         self.running = False

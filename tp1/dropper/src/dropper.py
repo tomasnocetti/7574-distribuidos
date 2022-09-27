@@ -1,5 +1,7 @@
 import csv
+from io import StringIO
 import logging
+from time import sleep
 
 from common.message import FileMessage, MessageEnd, VideoMessage
 from common.worker import Worker
@@ -14,8 +16,6 @@ class Dropper(Worker):
         self.middleware.recv_video_message(self.recv_videos)
 
     def recv_videos(self, message):
-        logging.info('New video message')
-
         if MessageEnd.is_message(message):
             logging.info(
                 f'Finish Recv Video Files')
@@ -32,13 +32,13 @@ class Dropper(Worker):
         fields = ['video_id', 'title', 'categoryId',
                   'likes', 'trending_date', 'thumbnail_link']
 
-        reader = csv.DictReader(file_message.file_content)
+        f = StringIO(file_message.file_content)
+        reader = csv.DictReader(f)
+        sleep(1)
         for row in reader:
             dropped = {your_key: row[your_key]
                        for your_key in fields}
             dropped['country'] = country
+            logging.info(f'Proccessed message: {dropped}')
             message = VideoMessage(dropped)
-
             self.middleware.send_video_message(message.pack())
-
-        print(file_message.content)

@@ -28,20 +28,21 @@ services:
       - FILE_READER_LINES=20
     volumes:
       - ./data:/workspace/data
-  joiner:
-    container_name: joiner
-    build:
-      context: ./
-      dockerfile: ./joiner/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
+  # joiner:
+  #   container_name: joiner
+  #   build:
+  #     context: ./
+  #     dockerfile: ./joiner/Dockerfile
+  #   entrypoint: python3 main.py
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   environment:
+  #     - RABBIT_SERVER_ADDRESS=rabbitmq
+  #     - LOGGING_LEVEL=INFO
   dropper:
-    container_name: dropper
+    deploy:
+      replicas: 5
     build:
       context: ./
       dockerfile: ./dropper/Dockerfile

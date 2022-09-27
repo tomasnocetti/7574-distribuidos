@@ -12,11 +12,18 @@ class DropperMiddlware(Middleware):
 
         self.channel.queue_declare(
             queue=VIDEO_DATA_QUEUE)
+        self.channel.basic_qos(prefetch_count=1)
 
     def recv_video_message(self, callback):
 
         self.vid_msg_tag = super().recv_message(DROPPER_INPUT_QUEUE, lambda ch, method,
-                                                properties, body: callback(body.decode()))
+                                                properties, body:
+                                                    self.callback_with_ack(callback, ch, method, properties, body))
+        self.channel.start_consuming()
+
+    def callback_with_ack(self, callback, ch, method, properties, body):
+        callback(body.decode())
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def send_video_message(self, message):
         super().send_message(VIDEO_DATA_QUEUE, message)
