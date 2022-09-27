@@ -1,7 +1,6 @@
 import logging
-from time import sleep
 
-from common.message import FileMessage, FileMessageEnd, FileMessageStart
+from common.message import FileMessage, MessageEnd, MessageStart, VideoMessage
 from common.worker import Worker
 from src.model import CategoryMapper
 
@@ -21,17 +20,18 @@ class Joiner(Worker):
         logging.info('New category message')
 
         if not self.keep_recv_categories:
-            if FileMessageStart.is_message(message):
+            if MessageStart.is_message(message):
                 logging.info(f'Starting Recv Categories')
 
                 self.keep_recv_categories = True
 
             return
 
-        if FileMessageEnd.is_message(message):
+        if MessageEnd.is_message(message):
             logging.info(
                 f'Finish Recv Categories, recv {self.categories.len()} countries')
             self.keep_recv_categories = False
+            self.keep_recv_videos = True
             self.middleware.stop_recv_category_message()
 
             self.middleware.recv_video_message(self.recv_videos)
@@ -48,5 +48,24 @@ class Joiner(Worker):
 
     def recv_videos(self, message):
 
-        if not FileMessage.is_message(message):
-            logging.error(f'Unknown message: {message}')
+        if (not self.keep_recv_videos):
+            logging.error(f'Video message should not be received: {message}')
+            return
+
+        if MessageEnd.is_message(message):
+            logging.info(
+                f'Finish Recv Videos')
+
+            self.middleware.send_video_message(message)
+            self.keep_recv_videos = False
+            self.middleware.stop_recv_video_message()
+            return
+
+        video = VideoMessage.decode(message)
+
+        category_name = self.categories.map_category(
+            video.content['country'], video.content['categoryId'])
+
+        video.content.pop('categoryId')
+        video.content['category'] = category_name
+        self.middleware.send_video_message(video.pack())

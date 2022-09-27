@@ -17,3 +17,7 @@ class CategoryMapper:
 
     def len(self):
         return len(self.categories)
+
+    def map_category(self, country: str, categoryId: str) -> str:
+        category_catalog = self.categories[country]
+        return category_catalog[categoryId]

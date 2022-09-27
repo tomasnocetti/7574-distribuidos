@@ -16,6 +16,11 @@ class Middleware():
                                    routing_key=queue,
                                    body=message)
 
+    def send_to_exchange(self, exchange, message):
+        self.channel.basic_publish(exchange=exchange,
+                                   routing_key='',
+                                   body=message)
+
     def stop_recv_message(self, consumer_tag):
         self.channel.basic_cancel(consumer_tag=consumer_tag)
 

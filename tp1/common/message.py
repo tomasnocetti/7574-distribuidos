@@ -1,8 +1,12 @@
+import json
+
+
 SEPARATOR = '|'
 
 MESSAGE_START = 'S'
 MESSAGE_END = 'E'
 MESSAGE_FILE = 'F'
+MESSAGE_VIDEO = 'V'
 
 
 class BaseMessage:
@@ -10,7 +14,7 @@ class BaseMessage:
         return f'{self.CODE}'
 
 
-class FileMessageStart(BaseMessage):
+class MessageStart(BaseMessage):
     def __init__(self) -> None:
         self.CODE = MESSAGE_START
 
@@ -19,7 +23,7 @@ class FileMessageStart(BaseMessage):
         return buffer[0] == MESSAGE_START
 
 
-class FileMessageEnd(BaseMessage):
+class MessageEnd(BaseMessage):
     def __init__(self) -> None:
         self.CODE = MESSAGE_END
 
@@ -51,5 +55,19 @@ class FileMessage():
 
 
 class VideoMessage():
-    def __init__(self, content) -> None:
-        pass
+    def __init__(self, content: dict) -> None:
+        self.CODE = MESSAGE_VIDEO
+        self.content = content
+
+    def pack(self) -> str:
+        return f'{self.CODE}{SEPARATOR}{json.dumps(self.content)}'
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == MESSAGE_VIDEO
+
+    @classmethod
+    def decode(cls, buffer: str):
+        content = buffer[2:]
+
+        return VideoMessage(json.loads(content))

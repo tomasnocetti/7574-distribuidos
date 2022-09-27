@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 import logging
 import os
+from common.constants import CATEGORY_SUBFIX, DATA_SUBFIX
 from src.server_connection import ServerConnection
-from src.middleware import Middleware
+from src.middleware import ClientMiddleware
 
 from os import listdir
 from os.path import isfile, join
 
 PATH = './data'
 
-CATEGORY_SUBFIX = '_category_id.json'
-DATA_SUBFIX = '_youtube_trending_data.csv'
-
 onlyfiles = [f for f in listdir(PATH) if isfile(join(PATH, f))]
 
 category_files = [item
                   for item in onlyfiles if CATEGORY_SUBFIX in item]
 
-raw_data_files = [item.replace(CATEGORY_SUBFIX, '') for item in category_files]
+raw_data_files = [item
+                  for item in onlyfiles if DATA_SUBFIX in item]
 
 
 def main():
@@ -29,7 +28,7 @@ def main():
     logging.info("Client starting work")
 
     # Initialize server and start server loop
-    middleware = Middleware()
+    middleware = ClientMiddleware()
     server = ServerConnection(middleware, PATH, category_files, raw_data_files)
 
     server.run()

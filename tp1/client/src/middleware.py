@@ -2,33 +2,25 @@ import logging
 import os
 import pika
 
+from common.middleware import Middleware
+
 RAW_DATA_QUEUE = 'raw_data_queue'
 CATEGORIES_QUEUE = 'categories_queue'
+VIDEO_DATA_QUEUE = 'video_data'
+DISTRIBUTION_EXCHANGE = 'distribution_exchange'
 
 
-class Middleware():
+class ClientMiddleware(Middleware):
     def __init__(self) -> None:
-        host = os.environ['RABBIT_SERVER_ADDRESS']
-
-        self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host))
-
-        self.channel = self.connection.channel()
-
-        self.raw_data_queue = self.channel.queue_declare(queue=RAW_DATA_QUEUE)
-        self.categories_queue = self.channel.queue_declare(
+        super().__init__()
+        self.channel.queue_declare(queue=RAW_DATA_QUEUE)
+        self.channel.queue_declare(
             queue=CATEGORIES_QUEUE)
-
-    def __send_message(self, queue, message):
-        self.channel.basic_publish(exchange='',
-                                   routing_key=queue,
-                                   body=message)
+        self.channel.queue_declare(
+            queue=VIDEO_DATA_QUEUE)
 
     def send_category_message(self, message):
-        self.__send_message(CATEGORIES_QUEUE, message)
+        super().send_message(CATEGORIES_QUEUE, message)
 
-    # def get_message(self, queue, callback):
-    #     self.channel.basic_consume(queue, callback, auto_ack=True)
-
-    def close_connection(self):
-        self.connection.close()
+    def send_video_message(self, message):
+        super().send_message(VIDEO_DATA_QUEUE, message)
