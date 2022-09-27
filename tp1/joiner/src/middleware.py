@@ -1,6 +1,5 @@
 from common.middleware import Middleware
 
-RAW_DATA_QUEUE = 'raw_data_queue'
 CATEGORIES_QUEUE = 'categories_queue'
 VIDEO_DATA_QUEUE = 'video_data'
 DISTRIBUTION_EXCHANGE = 'distribution_exchange'
@@ -9,7 +8,6 @@ DISTRIBUTION_EXCHANGE = 'distribution_exchange'
 class JoinerMiddlware(Middleware):
     def __init__(self) -> None:
         super().__init__()
-        self.channel.queue_declare(queue=RAW_DATA_QUEUE)
         self.channel.queue_declare(
             queue=CATEGORIES_QUEUE)
         self.channel.queue_declare(
