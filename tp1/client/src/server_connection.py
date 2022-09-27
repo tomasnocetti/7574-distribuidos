@@ -1,4 +1,5 @@
 import csv
+import io
 import json
 import logging
 import os
@@ -12,7 +13,7 @@ from .middleware import Middleware
 
 
 class ServerConnection():
-    def __init__(self, middleware, path, category_files, raw_data_files) -> None:
+    def __init__(self, middleware, path, category_files, raw_data_files, LINES_BUFFER) -> None:
         self.running = True
         signal.signal(signal.SIGTERM, self.__exit_gracefully)
         signal.signal(signal.SIGINT, self.__exit_gracefully)
@@ -21,6 +22,7 @@ class ServerConnection():
         self.path = path
         self.category_files = category_files
         self.raw_data_files = raw_data_files
+        self.LINES_BUFFER = LINES_BUFFER
 
     def run(self):
         self.send_categories()
@@ -43,30 +45,39 @@ class ServerConnection():
 
         self.middleware.send_category_message(MessageEnd().pack())
 
-    '''
-    /** Move this logic to dropper **/
-    '''
-
     def send_processed_csv(self):
         for file_name in self.raw_data_files:
             logging.info(f'Sending Raw Data File: {file_name}')
 
             with open(os.path.join(self.path, file_name)) as file:
-                country = file_name.replace(DATA_SUBFIX, '')
+                csv_reader = csv.reader(file, delimiter=',')
 
-                fields = ['video_id', 'title', 'categoryId',
-                          'likes', 'trending_date', 'thumbnail_link']
+                # list to store the names of columns
+                list_of_column_names = next(csv_reader)
+                keep_iterating = True
 
-                reader = csv.DictReader(file)
-                for row in reader:
-                    dropped = {your_key: row[your_key]
-                               for your_key in fields}
-                    dropped['country'] = country
-                    message = VideoMessage(dropped)
+                while(keep_iterating):
+                    f = io.StringIO()
+                    keep_iterating = self.get_next_file_slice(
+                        f, csv_reader, list_of_column_names)
+                    f.seek(0)
 
+                    message = FileMessage(file_name, f.read())
                     self.middleware.send_video_message(message.pack())
 
-            # We allow ourselves to send all data at once because files are small
+    def get_next_file_slice(self, f, csv_reader, header) -> bool:
+        writer = csv.writer(f)
+        writer.writerow(header)
+
+        counter = 0
+        for el in csv_reader:
+            if(counter == self.LINES_BUFFER):
+                return True
+
+            writer.writerow(el)
+            counter += 1
+
+        return False
 
     def __exit_gracefully(self, *args):
         self.running = False

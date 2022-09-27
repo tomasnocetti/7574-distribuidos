@@ -25,6 +25,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
+      - FILE_READER_LINES=20
     volumes:
       - ./data:/workspace/data
   joiner:
@@ -32,6 +33,18 @@ services:
     build:
       context: ./
       dockerfile: ./joiner/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+  dropper:
+    container_name: dropper
+    build:
+      context: ./
+      dockerfile: ./dropper/Dockerfile
     entrypoint: python3 main.py
     depends_on:
       rabbitmq:

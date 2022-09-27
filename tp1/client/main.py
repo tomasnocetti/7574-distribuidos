@@ -29,7 +29,8 @@ def main():
 
     # Initialize server and start server loop
     middleware = ClientMiddleware()
-    server = ServerConnection(middleware, PATH, category_files, raw_data_files)
+    server = ServerConnection(middleware, PATH, category_files,
+                              raw_data_files, os.environ['FILE_READER_LINES'])
 
     server.run()
 
