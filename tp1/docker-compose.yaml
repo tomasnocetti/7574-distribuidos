@@ -18,7 +18,7 @@ services:
     build:
       context: ./
       dockerfile: ./client/Dockerfile
-    entrypoint: python3 main.py
+    entrypoint: /bin/sh -c "while sleep 1000; do :; done"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -28,18 +28,18 @@ services:
       - FILE_READER_LINES=20
     volumes:
       - ./data:/workspace/data
-  # joiner:
-  #   container_name: joiner
-  #   build:
-  #     context: ./
-  #     dockerfile: ./joiner/Dockerfile
-  #   entrypoint: python3 main.py
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   environment:
-  #     - RABBIT_SERVER_ADDRESS=rabbitmq
-  #     - LOGGING_LEVEL=INFO
+  joiner:
+    container_name: joiner
+    build:
+      context: ./
+      dockerfile: ./joiner/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
   dropper:
     deploy:
       replicas: 5

@@ -23,7 +23,7 @@ class DropperMiddlware(Middleware):
 
     def callback_with_ack(self, callback, ch, method, properties, body):
         callback(body.decode())
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        # ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def send_video_message(self, message):
         super().send_message(VIDEO_DATA_QUEUE, message)
