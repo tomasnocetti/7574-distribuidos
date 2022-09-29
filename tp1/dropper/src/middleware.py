@@ -1,7 +1,10 @@
+import logging
 from common.middleware import Middleware
 
 DROPPER_INPUT_QUEUE = 'dropper_input'
 VIDEO_DATA_QUEUE = 'video_data'
+
+logging.getLogger("pika").propagate = False
 
 
 class DropperMiddlware(Middleware):

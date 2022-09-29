@@ -17,7 +17,7 @@ class Joiner(Worker):
         self.middleware.recv_category_message(self.recv_categories)
 
     def recv_categories(self, message):
-        logging.info('New category message')
+        logging.debug('New category message')
 
         if not self.keep_recv_categories:
             if MessageStart.is_message(message):
@@ -57,8 +57,8 @@ class Joiner(Worker):
                 f'Finish Recv Videos')
 
             self.middleware.send_video_message(message)
-            self.keep_recv_videos = False
-            self.middleware.stop_recv_video_message()
+            # self.keep_recv_videos = False
+            # self.middleware.stop_recv_video_message()
             return
 
         video = VideoMessage.decode(message)

@@ -41,11 +41,22 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
   dropper:
-    deploy:
-      replicas: 5
+    # deploy:
+    #   replicas: 5
     build:
       context: ./
       dockerfile: ./dropper/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+  likes_filter:
+    build:
+      context: ./
+      dockerfile: ./likes_filter/Dockerfile
     entrypoint: python3 main.py
     depends_on:
       rabbitmq:

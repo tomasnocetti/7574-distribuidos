@@ -72,6 +72,8 @@ class ServerConnection():
                 logging.info(
                     f'Sending Raw Data File: {file_name}, total: {counter}')
 
+        self.middleware.send_video_message(MessageEnd().pack())
+
     def get_next_file_slice(self, f, csv_reader, header) -> bool:
         writer = csv.writer(f)
         writer.writerow(header)

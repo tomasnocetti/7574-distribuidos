@@ -19,6 +19,7 @@ class Dropper(Worker):
         if MessageEnd.is_message(message):
             logging.info(
                 f'Finish Recv Video Files')
+            self.middleware.send_video_message(message)
             return
 
         if not FileMessage.is_message(message):
@@ -34,11 +35,11 @@ class Dropper(Worker):
 
         f = StringIO(file_message.file_content)
         reader = csv.DictReader(f)
-        sleep(1)
+
         for row in reader:
             dropped = {your_key: row[your_key]
                        for your_key in fields}
             dropped['country'] = country
-            logging.info(f'Proccessed message: {dropped}')
+            logging.debug(f'Proccessed message: {dropped}')
             message = VideoMessage(dropped)
             self.middleware.send_video_message(message.pack())
