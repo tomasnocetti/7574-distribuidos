@@ -30,7 +30,7 @@ class Dropper(Worker):
         country = file_message.file_name.replace(DATA_SUBFIX, '')
 
         fields = ['video_id', 'title', 'categoryId',
-                  'likes', 'trending_date', 'thumbnail_link', 'tags']
+                  'likes', 'trending_date', 'thumbnail_link', 'tags', 'view_count']
 
         f = StringIO(file_message.file_content)
         reader = csv.DictReader(f)

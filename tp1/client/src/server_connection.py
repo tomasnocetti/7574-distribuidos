@@ -1,14 +1,12 @@
 import csv
 import io
-import json
 import logging
 import os
-import signal
 from time import sleep
 from typing import List
 from common.constants import DATA_SUBFIX
 
-from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, MessageStart, Result1, VideoMessage
+from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, MessageStart, Result1, Result3
 from common.worker import Worker
 
 
@@ -23,7 +21,7 @@ class ServerConnection(Worker):
 
         self.results1 = []
         self.results2 = []
-        self.results3 = []
+        self.results3 = ''
 
         self.finish1 = False
         self.finish2 = False
@@ -106,6 +104,7 @@ class ServerConnection(Worker):
             return
 
         self.process_result1_message(message)
+        self.process_result3_message(message)
 
     def is_end_result(self, message):
         if (EndResult1.is_message(message)):
@@ -123,6 +122,11 @@ class ServerConnection(Worker):
         if (EndResult3.is_message(message)):
             self.finish3 = True
 
+            ### Printing Results ###
+            logging.info('**** Results3 ****')
+
+            logging.info(f' * Top views happened: {self.results3}')
+
         return self.finish1 and self.finish2 and self.finish3
 
     def process_result1_message(self, message):
@@ -132,6 +136,14 @@ class ServerConnection(Worker):
         message = Result1.decode(message)
 
         self.results1.append(message.content.split(','))
+
+    def process_result3_message(self, message):
+        if not Result3.is_message(message):
+            return
+
+        message = Result3.decode(message)
+
+        self.results3 = message.content
 
     def __exit_gracefully(self, *args):
         self.mid

@@ -1,4 +1,12 @@
-version: "3"
+#!/bin/bash
+set -e
+
+# Vars 
+REPLICAS="${1:-1}"
+FILE_NAME="${2:-"docker-compose.yaml"}"
+
+BASE="
+version: '3'
 services:
   rabbitmq:
     container_name: rabbitmq
@@ -7,7 +15,7 @@ services:
       - 5672:5672
       - 15672:15672
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:15672']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,7 +35,7 @@ services:
       - LOGGING_LEVEL=INFO
       - FILE_READER_LINES=20
     volumes:
-      - ./raw_data:/workspace/data
+      - ./data:/workspace/data
   joiner:
     container_name: joiner
     build:
@@ -86,7 +94,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=5
+      - TRENDING_INSTANCES=${REPLICAS}
   trending_top:
     build:
       context: ./
@@ -98,8 +106,14 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=5
-  trending_instance0:
+      - TRENDING_INSTANCES=${REPLICAS}"
+  
+  
+for (( i = 0; i < $REPLICAS; i++ )) 
+do
+  
+  TRENDING_INSTANCE="
+  trending_instance${i}:
     build:
       context: ./
       dockerfile: ./trending_instance/Dockerfile
@@ -110,52 +124,9 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=0
-  trending_instance1:
-    build:
-      context: ./
-      dockerfile: ./trending_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=1
-  trending_instance2:
-    build:
-      context: ./
-      dockerfile: ./trending_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=2
-  trending_instance3:
-    build:
-      context: ./
-      dockerfile: ./trending_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=3
-  trending_instance4:
-    build:
-      context: ./
-      dockerfile: ./trending_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=4
+      - INSTANCE_NR=${i}"
+
+  BASE+="${TRENDING_INSTANCE}"
+done
+
+echo "${BASE}" > ${FILE_NAME}

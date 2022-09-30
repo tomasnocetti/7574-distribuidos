@@ -15,19 +15,22 @@ class TrendingRouter(Worker):
     def recv_videos(self, message):
 
         if MessageEnd.is_message(message):
-            logging.info(
-                f'Finish Recv Videos')
 
-            self.middleware.send_video_message(message)
+            for id in range(self.nr_instances):
+                logging.info(
+                    f'Finish Recv Videos, message to instance: {id}')
+                self.middleware.send_video_message(message, str(id))
+
             return
 
         video = VideoMessage.decode(message)
 
         try:
             if (video.content['trending_date'] != None):
-                print(video.content['trending_date'], self.get_instance_n(
+                id = str(self.get_instance_n(
                     video.content['trending_date']))
-                self.middleware.send_video_message(message)
+
+                self.middleware.send_video_message(message, id)
         except KeyError:
             logging.error(
                 f'Key tags not found in {video.content}')
