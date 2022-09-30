@@ -32,7 +32,7 @@ def main():
     server = ServerConnection(middleware, PATH, category_files,
                               raw_data_files, os.environ['FILE_READER_LINES'])
 
-    server.run()
+    server.start()
 
     logging.info(
         'Bye bye!')

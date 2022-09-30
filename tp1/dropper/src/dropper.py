@@ -1,7 +1,6 @@
 import csv
 from io import StringIO
 import logging
-from time import sleep
 
 from common.message import FileMessage, MessageEnd, VideoMessage
 from common.worker import Worker
@@ -31,7 +30,7 @@ class Dropper(Worker):
         country = file_message.file_name.replace(DATA_SUBFIX, '')
 
         fields = ['video_id', 'title', 'categoryId',
-                  'likes', 'trending_date', 'thumbnail_link']
+                  'likes', 'trending_date', 'thumbnail_link', 'tags']
 
         f = StringIO(file_message.file_content)
         reader = csv.DictReader(f)
@@ -43,3 +42,7 @@ class Dropper(Worker):
             logging.debug(f'Proccessed message: {dropped}')
             message = VideoMessage(dropped)
             self.middleware.send_video_message(message.pack())
+
+        f.close()
+        # self.middleware.send_video_message(message.pack())
+        # f.close()

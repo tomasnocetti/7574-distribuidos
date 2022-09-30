@@ -8,6 +8,13 @@ MESSAGE_END = 'E'
 MESSAGE_FILE = 'F'
 MESSAGE_VIDEO = 'V'
 
+END_RESULT_1 = 'A'
+END_RESULT_2 = 'B'
+END_RESULT_3 = 'C'
+RESULT_1 = '1'
+RESULT_2 = '2'
+RESULT_3 = '3'
+
 
 class BaseMessage:
     def pack(self):
@@ -71,3 +78,87 @@ class VideoMessage():
         content = buffer[2:]
 
         return VideoMessage(json.loads(content))
+
+
+class BaseResult:
+    def __init__(self, code, content) -> None:
+        self.code = code
+        self.content = content
+
+    def pack(self) -> str:
+        return f'{self.code}{SEPARATOR}{self.content}'
+
+
+class Result1(BaseResult):
+    def __init__(self, content) -> None:
+        super().__init__(RESULT_1, content)
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == RESULT_1
+
+    @classmethod
+    def decode(cls, buffer: str):
+        content = buffer[2:]
+
+        return Result1(content)
+
+
+class Result2(BaseResult):
+    def __init__(self, content) -> None:
+        super().__init__(RESULT_2, content)
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == RESULT_2
+
+    @classmethod
+    def decode(cls, buffer: str):
+        content = buffer[2:]
+
+        return Result2(content)
+
+
+class Result3(BaseResult):
+    def __init__(self, content) -> None:
+        super().__init__(RESULT_3, content)
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == RESULT_3
+
+    @classmethod
+    def decode(cls, buffer: str):
+        content = buffer[2:]
+
+        return Result3(content)
+
+
+class EndResult1(BaseMessage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.CODE = END_RESULT_1
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == END_RESULT_1
+
+
+class EndResult2(BaseMessage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.CODE = END_RESULT_2
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == END_RESULT_2
+
+
+class EndResult3(BaseMessage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.CODE = END_RESULT_3
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == END_RESULT_3

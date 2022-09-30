@@ -63,9 +63,11 @@ class Joiner(Worker):
 
         video = VideoMessage.decode(message)
 
-        category_name = self.categories.map_category(
-            video.content['country'], video.content['categoryId'])
-
-        video.content.pop('categoryId')
-        video.content['category'] = category_name
-        self.middleware.send_video_message(video.pack())
+        try:
+            category_name = self.categories.map_category(
+                video.content['country'], video.content['categoryId'])
+            video.content.pop('categoryId')
+            video.content['category'] = category_name
+            self.middleware.send_video_message(video.pack())
+        except KeyError as err:
+            logging.debug(f'Invalid key error: {err}')

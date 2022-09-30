@@ -41,8 +41,8 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
   dropper:
-    # deploy:
-    #   replicas: 5
+    deploy:
+      replicas: 3
     build:
       context: ./
       dockerfile: ./dropper/Dockerfile
@@ -64,3 +64,26 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
+  tag_unique:
+    build:
+      context: ./
+      dockerfile: ./tag_unique/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+  # trending_router:
+  #   build:
+  #     context: ./
+  #     dockerfile: ./trending_router/Dockerfile
+  #   entrypoint: python3 main.py
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   environment:
+  #     - RABBIT_SERVER_ADDRESS=rabbitmq
+  #     - LOGGING_LEVEL=INFO
+  #     - TRENDING_INSTANCES=5

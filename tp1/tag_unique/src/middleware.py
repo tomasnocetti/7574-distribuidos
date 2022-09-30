@@ -2,24 +2,25 @@ from common.middleware import Middleware
 
 DISTRIBUTION_EXCHANGE = 'distribution_exchange'
 FILTERED_LIKES_EXCHANGE = 'filtered_exchange'
+RESULTS_QUEUE = 'results_queue'
 
 
-class LikesFilterMiddlware(Middleware):
+class TagUniqueMiddlware(Middleware):
     def __init__(self) -> None:
         super().__init__()
 
-        self.channel.exchange_declare(exchange=DISTRIBUTION_EXCHANGE,
-                                      exchange_type='fanout')
-
         self.channel.exchange_declare(exchange=FILTERED_LIKES_EXCHANGE,
                                       exchange_type='fanout')
+
+        self.channel.queue_declare(
+            queue=RESULTS_QUEUE)
 
         result = self.channel.queue_declare(queue='', exclusive=True)
 
         self.input_queue_name = result.method.queue
 
         self.channel.queue_bind(
-            exchange=DISTRIBUTION_EXCHANGE, queue=self.input_queue_name)
+            exchange=FILTERED_LIKES_EXCHANGE, queue=self.input_queue_name)
 
     def recv_video_message(self, callback):
 
@@ -27,5 +28,5 @@ class LikesFilterMiddlware(Middleware):
                                                 properties, body: callback(body.decode()), True)
         self.channel.start_consuming()
 
-    def send_video_message(self, message):
-        super().send_to_exchange(FILTERED_LIKES_EXCHANGE, '', message)
+    def send_result_message(self, message):
+        super().send_message(RESULTS_QUEUE, message)

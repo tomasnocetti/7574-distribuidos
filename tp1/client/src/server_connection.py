@@ -5,29 +5,36 @@ import logging
 import os
 import signal
 from time import sleep
+from typing import List
 from common.constants import DATA_SUBFIX
 
-from common.message import FileMessage, MessageEnd, MessageStart, VideoMessage
+from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, MessageStart, Result1, VideoMessage
+from common.worker import Worker
 
-from .middleware import Middleware
 
-
-class ServerConnection():
+class ServerConnection(Worker):
     def __init__(self, middleware, path, category_files, raw_data_files, LINES_BUFFER) -> None:
-        self.running = True
-        signal.signal(signal.SIGTERM, self.__exit_gracefully)
-        signal.signal(signal.SIGINT, self.__exit_gracefully)
+        super().__init__(middleware)
 
-        self.middleware: Middleware = middleware
         self.path = path
         self.category_files = category_files
         self.raw_data_files = raw_data_files
         self.LINES_BUFFER = LINES_BUFFER
 
+        self.results1 = []
+        self.results2 = []
+        self.results3 = []
+
+        self.finish1 = False
+        self.finish2 = False
+        self.finish3 = False
+
     def run(self):
         self.send_categories()
 
         self.send_processed_csv()
+
+        self.middleware.recv_result_message(self.recv_results)
 
     def send_categories(self):
         self.middleware.send_category_message(MessageStart().pack())
@@ -55,12 +62,12 @@ class ServerConnection():
                 # list to store the names of columns
                 list_of_column_names = next(csv_reader)
 
-                while(True):
+                while (True):
                     f = io.StringIO()
                     lines = self.get_next_file_slice(
                         f, csv_reader, list_of_column_names)
 
-                    if(lines == 0):
+                    if (lines == 0):
                         break
 
                     f.seek(0)
@@ -79,15 +86,54 @@ class ServerConnection():
         writer.writerow(header)
 
         counter = 0
-        for el in csv_reader:
-            writer.writerow(el)
-            counter += 1
-            if(counter == self.LINES_BUFFER):
+        while (True):
+            try:
+                el = next(csv_reader)
+            except csv.Error:
+                continue
+            except StopIteration:
                 return counter
 
-        return counter
+            writer.writerow(el)
+            counter += 1
+            # print(counter == int(self.LINES_BUFFER))
+            if (counter == int(self.LINES_BUFFER)):
+                return counter
+
+    def recv_results(self, message):
+        if self.is_end_result(message):
+            logging.info(f'Recv All Responses!')
+            return
+
+        self.process_result1_message(message)
+
+    def is_end_result(self, message):
+        if (EndResult1.is_message(message)):
+            self.finish1 = True
+
+            ### Printing Results ###
+            logging.info('**** Results1 ****')
+
+            for el in self.results1:
+                logging.info(f' * {el}')
+
+        if (EndResult2.is_message(message)):
+            self.finish2 = True
+
+        if (EndResult3.is_message(message)):
+            self.finish3 = True
+
+        return self.finish1 and self.finish2 and self.finish3
+
+    def process_result1_message(self, message):
+        if not Result1.is_message(message):
+            return
+
+        message = Result1.decode(message)
+
+        self.results1.append(message.content.split(','))
 
     def __exit_gracefully(self, *args):
-        self.running = False
+        self.mid
         logging.info(
             'Exiting gracefully')

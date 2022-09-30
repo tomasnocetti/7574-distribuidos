@@ -16,16 +16,16 @@ class Middleware():
                                    routing_key=queue,
                                    body=message)
 
-    def send_to_exchange(self, exchange, message):
+    def send_to_exchange(self, exchange, routing_key, message):
         self.channel.basic_publish(exchange=exchange,
-                                   routing_key='',
+                                   routing_key=routing_key,
                                    body=message)
 
     def stop_recv_message(self, consumer_tag):
         self.channel.basic_cancel(consumer_tag=consumer_tag)
 
-    def recv_message(self, queue, callback):
-        return self.channel.basic_consume(queue, callback, auto_ack=True)
+    def recv_message(self, queue, callback, autoack):
+        return self.channel.basic_consume(queue, callback, auto_ack=autoack)
 
     def close_connection(self):
         self.connection.close()

@@ -24,14 +24,14 @@ class JoinerMiddlware(Middleware):
 
     def recv_category_message(self, callback):
         self.cat_msg_tag = super().recv_message(CATEGORIES_QUEUE, lambda ch, method,
-                                                properties, body: callback(body.decode()))
+                                                properties, body: callback(body.decode()), True)
 
         self.channel.start_consuming()
 
     def recv_video_message(self, callback):
 
         self.vid_msg_tag = super().recv_message(VIDEO_DATA_QUEUE, lambda ch, method,
-                                                properties, body: callback(body.decode()))
+                                                properties, body: callback(body.decode()), True)
 
     def send_video_message(self, message):
-        super().send_to_exchange(DISTRIBUTION_EXCHANGE, message)
+        super().send_to_exchange(DISTRIBUTION_EXCHANGE, '', message)
