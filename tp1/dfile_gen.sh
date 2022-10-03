@@ -96,10 +96,10 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
       - TRENDING_INSTANCES=${REPLICAS_TRENDING}
-  thumbnails_router:
+  thumbnail_router:
     build:
       context: ./
-      dockerfile: ./thumbnails_router/Dockerfile
+      dockerfile: ./thumbnail_router/Dockerfile
     entrypoint: python3 main.py
     depends_on:
       rabbitmq:
@@ -130,6 +130,26 @@ do
     build:
       context: ./
       dockerfile: ./trending_instance/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+      - INSTANCE_NR=${i}"
+
+  BASE+="${TRENDING_INSTANCE}"
+done
+
+for (( i = 0; i < $REPLICAS_THUMBNAIL; i++ )) 
+do
+  
+  TRENDING_INSTANCE="
+  thumbnail_instance${i}:
+    build:
+      context: ./
+      dockerfile: ./thumbnail_instance/Dockerfile
     entrypoint: python3 main.py
     depends_on:
       rabbitmq:

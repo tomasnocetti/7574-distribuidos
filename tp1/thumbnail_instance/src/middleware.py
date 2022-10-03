@@ -1,6 +1,6 @@
 from common.middleware import Middleware
 
-THUMBNAIL_EXCHANGE = 'trending_exchange'
+THUMBNAIL_EXCHANGE = 'thumbnail_exchange'
 DOWNLOAD_QUEUE = 'download_queue'
 
 

@@ -1,6 +1,6 @@
 from common.middleware import Middleware
 
-THUMBNAIL_EXCHANGE = 'trending_exchange'
+THUMBNAIL_EXCHANGE = 'thumbnail_exchange'
 DISTRIBUTION_EXCHANGE = 'distribution_exchange'
 
 
