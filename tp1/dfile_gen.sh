@@ -2,8 +2,9 @@
 set -e
 
 # Vars 
-REPLICAS="${1:-1}"
-FILE_NAME="${2:-"docker-compose.yaml"}"
+REPLICAS_TRENDING="${1:-1}"
+REPLICAS_THUMBNAIL="${2:-1}"
+FILE_NAME="${3:-"docker-compose.yaml"}"
 
 BASE="
 version: '3'
@@ -94,7 +95,19 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=${REPLICAS}
+      - TRENDING_INSTANCES=${REPLICAS_TRENDING}
+  thumbnails_router:
+    build:
+      context: ./
+      dockerfile: ./thumbnails_router/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+      - INSTANCES=${REPLICAS_THUMBNAIL}
   trending_top:
     build:
       context: ./
@@ -106,10 +119,10 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=${REPLICAS}"
+      - TRENDING_INSTANCES=${REPLICAS_TRENDING}"
   
   
-for (( i = 0; i < $REPLICAS; i++ )) 
+for (( i = 0; i < $REPLICAS_TRENDING; i++ )) 
 do
   
   TRENDING_INSTANCE="
