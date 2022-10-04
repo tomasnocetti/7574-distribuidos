@@ -57,8 +57,7 @@ class Joiner(Worker):
                 f'Finish Recv Videos')
 
             self.middleware.send_video_message(message)
-            # self.keep_recv_videos = False
-            # self.middleware.stop_recv_video_message()
+
             return
 
         video = VideoMessage.decode(message)

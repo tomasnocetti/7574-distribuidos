@@ -35,6 +35,7 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
       - FILE_READER_LINES=20
+      - THUMBNAIL_PATH=.temp
     volumes:
       - ./data:/workspace/data
   joiner:
@@ -119,9 +120,20 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=${REPLICAS_TRENDING}"
-  
-  
+      - TRENDING_INSTANCES=${REPLICAS_TRENDING}
+  downloader:
+    build:
+      context: ./
+      dockerfile: ./downloader/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+      - THUMBNAIL_INSTANCES=${REPLICAS_THUMBNAIL}"
+      
 for (( i = 0; i < $REPLICAS_TRENDING; i++ )) 
 do
   

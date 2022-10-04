@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import logging
 import os
-from src.middleware import TrendingTopMiddleware
-from src.worker import TrendingTop
+from src.middleware import DownloaderMiddleware
+from src.worker import DownloaderInstance
 
 
 def main():
@@ -11,13 +11,13 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.info("Trending Top starting work")
+    logging.info("Downloader starting work")
 
-    instances = int(os.getenv("TRENDING_INSTANCES")) or 1
+    instances = int(os.getenv("THUMBNAIL_INSTANCES")) or 1
 
     # Initialize server and start server loop
-    middleware = TrendingTopMiddleware()
-    worker = TrendingTop(middleware, instances)
+    middleware = DownloaderMiddleware()
+    worker = DownloaderInstance(middleware, instances)
 
     worker.start()
 

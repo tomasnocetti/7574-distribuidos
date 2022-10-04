@@ -11,7 +11,7 @@ def main():
 
     # Log config parameters at the beginning of the program to verify the configuration
     # of the component
-    logging.info("Trending Router starting work")
+    logging.info("Trending Instance starting work")
 
     instance_n = os.getenv("INSTANCE_NR") or '0'
 

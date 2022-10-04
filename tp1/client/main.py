@@ -30,7 +30,7 @@ def main():
     # Initialize server and start server loop
     middleware = ClientMiddleware()
     server = ServerConnection(middleware, PATH, category_files,
-                              raw_data_files, os.environ['FILE_READER_LINES'])
+                              raw_data_files, os.environ['FILE_READER_LINES'], os.environ['THUMBNAIL_PATH'])
 
     server.start()
 

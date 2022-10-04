@@ -2,16 +2,15 @@ import csv
 import io
 import logging
 import os
-from time import sleep
-from typing import List
-from common.constants import DATA_SUBFIX
+import ast
+import os
 
-from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, MessageStart, Result1, Result3
+from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, MessageStart, Result1, Result2, Result3
 from common.worker import Worker
 
 
 class ServerConnection(Worker):
-    def __init__(self, middleware, path, category_files, raw_data_files, LINES_BUFFER) -> None:
+    def __init__(self, middleware, path, category_files, raw_data_files, LINES_BUFFER, thumbnail_path) -> None:
         super().__init__(middleware)
 
         self.path = path
@@ -19,8 +18,17 @@ class ServerConnection(Worker):
         self.raw_data_files = raw_data_files
         self.LINES_BUFFER = LINES_BUFFER
 
+        self.thumbnail_path = thumbnail_path
+        # Check whether the specified path exists or not
+        isExist = os.path.exists(self.thumbnail_path)
+        if not isExist:
+            os.makedirs(self.thumbnail_path)
+
+        # Remove all files in the directory
+        for f in os.listdir(self.thumbnail_path):
+            os.remove(os.path.join(self.thumbnail_path, f))
+
         self.results1 = []
-        self.results2 = []
         self.results3 = ''
 
         self.finish1 = False
@@ -75,7 +83,7 @@ class ServerConnection(Worker):
                     self.middleware.send_video_message(message.pack())
 
                 logging.info(
-                    f'Sending Raw Data File: {file_name}, total: {counter}')
+                    f'Sending Raw Data File: {file_name}')
 
         self.middleware.send_video_message(MessageEnd().pack())
 
@@ -101,9 +109,11 @@ class ServerConnection(Worker):
     def recv_results(self, message):
         if self.is_end_result(message):
             logging.info(f'Recv All Responses!')
+            self.exit_gracefully()
             return
 
         self.process_result1_message(message)
+        self.process_result2_message(message)
         self.process_result3_message(message)
 
     def is_end_result(self, message):
@@ -118,6 +128,9 @@ class ServerConnection(Worker):
 
         if (EndResult2.is_message(message)):
             self.finish2 = True
+            logging.info('**** Results2 ****')
+            logging.info(
+                f' * All files downloaded to path: {self.thumbnail_path}')
 
         if (EndResult3.is_message(message)):
             self.finish3 = True
@@ -137,6 +150,16 @@ class ServerConnection(Worker):
 
         self.results1.append(message.content.split(','))
 
+    def process_result2_message(self, message):
+        if not Result2.is_message(message):
+            return
+
+        message = Result2.decode(message)
+        file_name = message.file_name
+
+        with open(f'{self.thumbnail_path}/{file_name}', 'ab+') as file:
+            file.write(ast.literal_eval(message.content))
+
     def process_result3_message(self, message):
         if not Result3.is_message(message):
             return
@@ -144,8 +167,3 @@ class ServerConnection(Worker):
         message = Result3.decode(message)
 
         self.results3 = message.content
-
-    def __exit_gracefully(self, *args):
-        self.mid
-        logging.info(
-            'Exiting gracefully')

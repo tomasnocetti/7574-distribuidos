@@ -26,8 +26,10 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
       - FILE_READER_LINES=20
+      - THUMBNAIL_PATH=.temp
     volumes:
       - ./raw_data:/workspace/data
+      - ./.temp:/workspace/.temp
   joiner:
     container_name: joiner
     build:
@@ -86,7 +88,19 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=5
+      - TRENDING_INSTANCES=3
+  thumbnail_router:
+    build:
+      context: ./
+      dockerfile: ./thumbnail_router/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+      - INSTANCES=3
   trending_top:
     build:
       context: ./
@@ -98,7 +112,19 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=5
+      - TRENDING_INSTANCES=3
+  downloader:
+    build:
+      context: ./
+      dockerfile: ./downloader/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+      - THUMBNAIL_INSTANCES=3
   trending_instance0:
     build:
       context: ./
@@ -135,10 +161,10 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
       - INSTANCE_NR=2
-  trending_instance3:
+  thumbnail_instance0:
     build:
       context: ./
-      dockerfile: ./trending_instance/Dockerfile
+      dockerfile: ./thumbnail_instance/Dockerfile
     entrypoint: python3 main.py
     depends_on:
       rabbitmq:
@@ -146,11 +172,11 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=3
-  trending_instance4:
+      - INSTANCE_NR=0
+  thumbnail_instance1:
     build:
       context: ./
-      dockerfile: ./trending_instance/Dockerfile
+      dockerfile: ./thumbnail_instance/Dockerfile
     entrypoint: python3 main.py
     depends_on:
       rabbitmq:
@@ -158,4 +184,16 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=4
+      - INSTANCE_NR=1
+  thumbnail_instance2:
+    build:
+      context: ./
+      dockerfile: ./thumbnail_instance/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - LOGGING_LEVEL=INFO
+      - INSTANCE_NR=2

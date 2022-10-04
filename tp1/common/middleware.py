@@ -1,5 +1,8 @@
+import logging
 import os
 import pika
+
+logging.getLogger("pika").propagate = False
 
 
 class Middleware():

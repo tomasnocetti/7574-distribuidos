@@ -1,4 +1,5 @@
 import json
+import logging
 
 
 SEPARATOR = '|'
@@ -14,6 +15,7 @@ END_RESULT_3 = 'C'
 RESULT_1 = '1'
 RESULT_2 = '2'
 RESULT_3 = '3'
+ENDIAN = 'big'
 
 
 class BaseMessage:
@@ -105,18 +107,29 @@ class Result1(BaseResult):
 
 
 class Result2(BaseResult):
-    def __init__(self, content) -> None:
+    def __init__(self, file_name, content) -> None:
         super().__init__(RESULT_2, content)
+        self.file_name = file_name
+
+    def pack(self) -> str:
+        length = len(self.content)
+        return f'{self.code}{SEPARATOR}{self.file_name}{SEPARATOR}{length}{SEPARATOR}{self.content}'
 
     @staticmethod
     def is_message(buffer) -> bool:
         return buffer[0] == RESULT_2
 
     @classmethod
-    def decode(cls, buffer: str):
+    def decode(cls, buffer):
         content = buffer[2:]
+        index = content.find(SEPARATOR)
+        file_name = content[:index]
+        content = content[index+1:]
+        length_separator = content.find(SEPARATOR)
+        length = int(content[:length_separator])
+        content = content[length_separator+1:]
 
-        return Result2(content)
+        return Result2(file_name, content)
 
 
 class Result3(BaseResult):
