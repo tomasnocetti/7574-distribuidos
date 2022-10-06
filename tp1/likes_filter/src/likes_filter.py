@@ -5,8 +5,9 @@ from common.worker import Worker
 
 
 class LikesFilter(Worker):
-    def __init__(self, middleware) -> None:
+    def __init__(self, middleware, filter_qty) -> None:
         super().__init__(middleware)
+        self.filter_qty = filter_qty
 
     def run(self):
         self.middleware.recv_video_message(self.recv_videos)
@@ -23,7 +24,7 @@ class LikesFilter(Worker):
         video = VideoMessage.decode(message)
 
         try:
-            if (video.content['likes'] != None and int(video.content['likes']) > 5000000):
+            if (video.content['likes'] != None and int(video.content['likes']) > self.filter_qty):
                 self.middleware.send_video_message(message)
         except KeyError:
             logging.error(

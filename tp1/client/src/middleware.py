@@ -1,6 +1,6 @@
 from common.middleware import Middleware
 
-CATEGORIES_QUEUE = 'categories_queue'
+CATEGORIES_EXCHANGE = 'categories_exchange'
 DROPPER_INPUT_QUEUE = 'dropper_input'
 RESULTS_QUEUE = 'results_queue'
 
@@ -8,8 +8,8 @@ RESULTS_QUEUE = 'results_queue'
 class ClientMiddleware(Middleware):
     def __init__(self) -> None:
         super().__init__()
-        self.channel.queue_declare(
-            queue=CATEGORIES_QUEUE)
+        self.channel.exchange_declare(exchange=CATEGORIES_EXCHANGE,
+                                      exchange_type='fanout')
         self.channel.queue_declare(
             queue=DROPPER_INPUT_QUEUE)
 
@@ -17,7 +17,7 @@ class ClientMiddleware(Middleware):
             queue=RESULTS_QUEUE)
 
     def send_category_message(self, message):
-        super().send_message(CATEGORIES_QUEUE, message)
+        super().send_to_exchange(CATEGORIES_EXCHANGE, '', message)
 
     def send_video_message(self, message):
         super().send_message(DROPPER_INPUT_QUEUE, message)

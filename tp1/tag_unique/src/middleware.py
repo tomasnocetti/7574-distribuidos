@@ -1,6 +1,5 @@
 from common.middleware import Middleware
 
-DISTRIBUTION_EXCHANGE = 'distribution_exchange'
 FILTERED_LIKES_EXCHANGE = 'filtered_exchange'
 RESULTS_QUEUE = 'results_queue'
 

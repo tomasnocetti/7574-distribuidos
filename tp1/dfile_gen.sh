@@ -2,9 +2,13 @@
 set -e
 
 # Vars 
-REPLICAS_TRENDING="${1:-1}"
-REPLICAS_THUMBNAIL="${2:-1}"
-FILE_NAME="${3:-"docker-compose.yaml"}"
+REPLICAS_JOINER="${1:-1}"
+REPLICAS_DROPPER="${2:-1}"
+REPLICAS_TRENDING="${3:-1}"
+REPLICAS_THUMBNAIL="${4:-1}"
+FILE_NAME="${5:-"docker-compose.yaml"}"
+
+FILTER_QTY="5000000"
 
 BASE="
 version: '3'
@@ -37,9 +41,11 @@ services:
       - FILE_READER_LINES=20
       - THUMBNAIL_PATH=.temp
     volumes:
-      - ./data:/workspace/data
+      - ./raw_data:/workspace/data
+      - ./.temp:/workspace/.temp
   joiner:
-    container_name: joiner
+    deploy:
+      replicas: ${REPLICAS_JOINER}
     build:
       context: ./
       dockerfile: ./joiner/Dockerfile
@@ -52,7 +58,7 @@ services:
       - LOGGING_LEVEL=INFO
   dropper:
     deploy:
-      replicas: 3
+      replicas: ${REPLICAS_DROPPER}
     build:
       context: ./
       dockerfile: ./dropper/Dockerfile
@@ -74,6 +80,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
+      - FILTER_QTY=${FILTER_QTY}
   tag_unique:
     build:
       context: ./

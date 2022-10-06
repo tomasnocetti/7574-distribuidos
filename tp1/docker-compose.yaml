@@ -1,4 +1,5 @@
-version: "3"
+
+version: '3'
 services:
   rabbitmq:
     container_name: rabbitmq
@@ -7,7 +8,7 @@ services:
       - 5672:5672
       - 15672:15672
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:15672']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +32,8 @@ services:
       - ./raw_data:/workspace/data
       - ./.temp:/workspace/.temp
   joiner:
-    container_name: joiner
+    deploy:
+      replicas: 3
     build:
       context: ./
       dockerfile: ./joiner/Dockerfile
@@ -66,6 +68,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
+      - FILTER_QTY=5000000
   tag_unique:
     build:
       context: ./
@@ -88,7 +91,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=3
+      - TRENDING_INSTANCES=1
   thumbnail_router:
     build:
       context: ./
@@ -100,7 +103,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - INSTANCES=3
+      - INSTANCES=1
   trending_top:
     build:
       context: ./
@@ -112,7 +115,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=3
+      - TRENDING_INSTANCES=1
   downloader:
     build:
       context: ./
@@ -124,7 +127,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
-      - THUMBNAIL_INSTANCES=3
+      - THUMBNAIL_INSTANCES=1
   trending_instance0:
     build:
       context: ./
@@ -137,30 +140,6 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
       - INSTANCE_NR=0
-  trending_instance1:
-    build:
-      context: ./
-      dockerfile: ./trending_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=1
-  trending_instance2:
-    build:
-      context: ./
-      dockerfile: ./trending_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=2
   thumbnail_instance0:
     build:
       context: ./
@@ -173,27 +152,3 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
       - INSTANCE_NR=0
-  thumbnail_instance1:
-    build:
-      context: ./
-      dockerfile: ./thumbnail_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=1
-  thumbnail_instance2:
-    build:
-      context: ./
-      dockerfile: ./thumbnail_instance/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - LOGGING_LEVEL=INFO
-      - INSTANCE_NR=2

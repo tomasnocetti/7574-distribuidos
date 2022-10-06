@@ -9,12 +9,12 @@ services:
 
     entrypoint: /bin/sh -c "while sleep 1000; do :; done"
 
-  # joiner:
-  #   volumes:
-  #     - ./joiner:/workspace
-  #     - ./common:/workspace/common
+  joiner:
+    volumes:
+      - ./joiner:/workspace
+      - ./common:/workspace/common
 
-  #   entrypoint: /bin/sh -c "while sleep 1000; do :; done"
+    entrypoint: /bin/sh -c "while sleep 1000; do :; done"
 
   # dropper:
   #   volumes:
@@ -57,9 +57,9 @@ services:
 
   #   entrypoint: /bin/sh -c "while sleep 1000; do :; done"
 
-  downloader:
-    volumes:
-      - ./downloader:/workspace
-      - ./common:/workspace/common
+  # downloader:
+  #   volumes:
+  #     - ./downloader:/workspace
+  #     - ./common:/workspace/common
 
-    entrypoint: /bin/sh -c "while sleep 1000; do :; done"
+  #   entrypoint: /bin/sh -c "while sleep 1000; do :; done"

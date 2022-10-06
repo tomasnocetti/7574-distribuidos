@@ -43,8 +43,6 @@ class ServerConnection(Worker):
         self.middleware.recv_result_message(self.recv_results)
 
     def send_categories(self):
-        self.middleware.send_category_message(MessageStart().pack())
-
         for file_name in self.category_files:
             logging.info(f'Sending Category File: {file_name}')
 

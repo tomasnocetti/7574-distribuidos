@@ -1,6 +1,6 @@
 import logging
 
-from common.message import MessageEnd, VideoMessage
+from common.message import CategoryMessage, MessageEnd, VideoMessage
 from common.worker import Worker
 from datetime import datetime
 from .model import ThumbnailGrouper
@@ -13,9 +13,23 @@ class ThumbnailInstance(Worker):
         self.dir = f'.temp'
         self.grouper = ThumbnailGrouper(self.dir)
         self.counter = 0
+        self.category_count = 0
 
     def run(self):
+        self.middleware.recv_category_count(self.recv_category_count)
         self.middleware.recv_video_message(self.recv_videos)
+
+    def recv_category_count(self, message):
+        if CategoryMessage.is_message(message):
+            message = CategoryMessage.decode(message)
+
+            self.category_count = int(message.content)
+
+            self.middleware.stop_recv_category_count()
+            logging.info(
+                f'Finish Recv Category Count: {message.content}')
+
+            return
 
     def recv_videos(self, message):
 

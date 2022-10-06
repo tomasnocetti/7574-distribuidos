@@ -13,9 +13,10 @@ def main():
     # of the component
     logging.info("Likes Filter starting work")
 
+    filter_qty = int(os.getenv("FILTER_QTY"))
     # Initialize server and start server loop
     middleware = LikesFilterMiddlware()
-    worker = LikesFilter(middleware)
+    worker = LikesFilter(middleware, filter_qty)
 
     worker.start()
 

@@ -8,6 +8,7 @@ MESSAGE_START = 'S'
 MESSAGE_END = 'E'
 MESSAGE_FILE = 'F'
 MESSAGE_VIDEO = 'V'
+MESSAGE_CATEGORY_COUNT = 'C'
 
 END_RESULT_1 = 'A'
 END_RESULT_2 = 'B'
@@ -15,7 +16,6 @@ END_RESULT_3 = 'C'
 RESULT_1 = '1'
 RESULT_2 = '2'
 RESULT_3 = '3'
-ENDIAN = 'big'
 
 
 class BaseMessage:
@@ -89,6 +89,21 @@ class BaseResult:
 
     def pack(self) -> str:
         return f'{self.code}{SEPARATOR}{self.content}'
+
+
+class CategoryMessage(BaseResult):
+    def __init__(self, content) -> None:
+        super().__init__(MESSAGE_CATEGORY_COUNT, content)
+
+    @staticmethod
+    def is_message(buffer) -> bool:
+        return buffer[0] == MESSAGE_CATEGORY_COUNT
+
+    @classmethod
+    def decode(cls, buffer: str):
+        content = buffer[2:]
+
+        return CategoryMessage(content)
 
 
 class Result1(BaseResult):
