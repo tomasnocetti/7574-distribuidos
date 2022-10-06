@@ -6,7 +6,8 @@ REPLICAS_JOINER="${1:-1}"
 REPLICAS_DROPPER="${2:-1}"
 REPLICAS_TRENDING="${3:-1}"
 REPLICAS_THUMBNAIL="${4:-1}"
-FILE_NAME="${5:-"docker-compose.yaml"}"
+REPLICAS_LIKES_FILTER="${5:-1}"
+FILE_NAME="docker-compose.yaml"
 
 FILTER_QTY="5000000"
 
@@ -70,6 +71,7 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - LOGGING_LEVEL=INFO
   likes_filter:
+    scale: ${REPLICAS_LIKES_FILTER}
     build:
       context: ./
       dockerfile: ./likes_filter/Dockerfile

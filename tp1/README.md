@@ -20,6 +20,45 @@ Esto queda modelado con el siguiente diagrama de casos de uso:
 
 Para el trabajo se supuso que el Cliente puede conectarse directamente con el sistema, sin tener que tener un punto de entrada en el mismo. Simulando un cliente en una red cerrada.
 
+## Desarrollo
+
+Para el presente trabajo se usaron las siguientes tecnologias:
+
+- RabbitMQ
+- Docker
+- Python3
+
+## Ejecucción
+
+### Configuración
+
+Para correr el sistema primero se debera generar un `docker-compose.yaml` con los paramteros
+de escalamiento.
+Dicho archivo se genera con el comando:
+
+```
+sh dfile_gen.sh <REPLICAS_JOINER> <REPLICAS_DROPPER> <REPLICAS_TRENDING> <REPLICAS_THUMBNAIL> <REPLICAS_LIKES_FILTER>
+```
+
+Se recomienda probar con 1 para cada valor e ir ajustando de acuerdo al flujo de mensajes que se puede visualizar directamente desde la consola de RabbitMQ.
+
+Se debe tener en el `root` una carpeta `/raw_data` con los archivos a analizar. Se deja un ejemplo de la estructura de archivos en la carpeta `/data` que actua como set de prueba.
+
+### Inicio
+
+Para correr el programa se deben inicializar todos los servicios, esto se puede hacer con el comando:
+
+```
+make up
+```
+
+Esto levantara todos los servicios de procesamiento.
+Finalmente para iniciar el programa se debera correr en otra terminal:
+
+```
+sh run_client.sh
+```
+
 ## Servicios
 
 La estructura del sistema se encuentra armada de manera modular, donde cada modulo tiene una responsabilidad especifica y se comunica solo con sus conocidos.
@@ -53,10 +92,28 @@ Los siguientes diagramas explican en cada caso de uso como es el flujo de datos.
 
 ![DAG-3](diagramas/dag-3.png "DAG3")
 
+### Arquitectura a nivel general
+
+El sistema posee la siguiente arquitectura:
+
+![alt text](diagramas/robustez.png "Diagrama de robustez")
+
 ### Despliegue
 
-Cada modulo se encuentra deployado en un contenedor individual permitiendo de esta manera su escalabilidad. El sistema entero se encuentra comunicado a traves de una instancia de Rabbit MQ, conocida por todos.
+Cada módulo se encuentra deployado en un contenedor individual permitiendo de esta manera su escalabilidad. El sistema entero se encuentra comunicado a traves de una instancia de Rabbit MQ, conocida por todos.
 
 Se puede visualizar en el siguiente diagrama:
 
 ![alt text](diagramas/despliegue.png "Diagrama de despliegue")
+
+### Problemas encontrados
+
+A lo largo del desarrollo nos encontramos con algunos siguientes inconvenientes propios de RabbitMQ. Uno de ellos producia que una de las colas de rabbitmq obtenga mensajes ilimitadamente generando la perdida de la instancia. Esto era causado por el AutoACK en True. Una caracteristica que tiene el framework que permite confirmar la recepcion del mensaje apenas es entregado. Se soluciono difiriendo la confirmacion del mensaje.
+
+### Otros Diagramas
+
+Para completar la explicación de la solucion se dejan los siguientes diagramas:
+
+- [Diagrama de Actividades que explica la interaccion entre el Cliente/Dropper y Joiner](diagramas/drop-and-join-activity.png)
+
+- [Diagrama de Paquetes que explica el modelo basico Worker / Middleware utilizado](diagramas/package-joiner.png)
