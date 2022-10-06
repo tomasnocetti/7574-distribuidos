@@ -12,15 +12,13 @@ youtube de los últimos años.
 - El día con más vistas totales sobre los vídeos que recibieron más de
   5M de likes durante ese día.
 
-Esto queda especificado
+Esto queda modelado con el siguiente diagrama de casos de uso:
 
-## Supuestos
+![DAG-1](diagramas/use-cases.png "DAG1")
+
+### Supuestos
 
 Para el trabajo se supuso que el Cliente puede conectarse directamente con el sistema, sin tener que tener un punto de entrada en el mismo. Simulando un cliente en una red cerrada.
-
-## Arquitectura
-
-Desde un punto de vista del manejo logico
 
 ## Servicios
 
@@ -57,7 +55,7 @@ Los siguientes diagramas explican en cada caso de uso como es el flujo de datos.
 
 ### Despliegue
 
-Cada modulo se encuentra deployado en un contenedor individual permitiendo de esta manera su escalabilidad.El sistema entero se encuentra comunicado a traves de una instancia de Rabbit MQ, conocida por todos.
+Cada modulo se encuentra deployado en un contenedor individual permitiendo de esta manera su escalabilidad. El sistema entero se encuentra comunicado a traves de una instancia de Rabbit MQ, conocida por todos.
 
 Se puede visualizar en el siguiente diagrama:
 
