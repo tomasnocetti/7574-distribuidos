@@ -1,33 +1,3 @@
-## Introduccion
-
-Se solicita un sistema distribuido que analice los videos trending de
-youtube de los últimos años.
-
-### Se debe obtener:
-
-- Los pares únicos de (id, title, category) de los videos etiquetados
-  como 'funny' con más de 5M de likes.
-- La descarga del thumbnail de aquellos videos que fueron trending por
-  al menos 3 semanas en todos los países al mismo tiempo.
-- El día con más vistas totales sobre los vídeos que recibieron más de
-  5M de likes durante ese día.
-
-Esto queda modelado con el siguiente diagrama de casos de uso:
-
-![DAG-1](diagramas/use-cases.png "DAG1")
-
-### Supuestos
-
-Para el trabajo se supuso que el Cliente puede conectarse directamente con el sistema, sin tener que tener un punto de entrada en el mismo. Simulando un cliente en una red cerrada.
-
-## Desarrollo
-
-Para el presente trabajo se usaron las siguientes tecnologias:
-
-- RabbitMQ
-- Docker
-- Python3
-
 ## Ejecucción
 
 ### Configuración
@@ -59,7 +29,37 @@ Finalmente para iniciar el programa se debera correr en otra terminal:
 sh run_client.sh
 ```
 
-## Servicios
+## 4 + 1 Views
+
+### Scope
+
+Se solicita un sistema distribuido que analice los videos trending de
+youtube de los últimos años.
+
+- Los pares únicos de (id, title, category) de los videos etiquetados
+  como 'funny' con más de 5M de likes.
+- La descarga del thumbnail de aquellos videos que fueron trending por
+  al menos 3 semanas en todos los países al mismo tiempo.
+- El día con más vistas totales sobre los vídeos que recibieron más de
+  5M de likes durante ese día.
+
+Esto queda modelado con el siguiente diagrama de casos de uso:
+
+![DAG-1](diagramas/use-cases.png "DAG1")
+
+#### Supuestos
+
+Para el trabajo se supuso que el Cliente puede conectarse directamente con el sistema, sin tener que tener un punto de entrada en el mismo. Simulando un cliente en una red cerrada.
+
+#### Desarrollo
+
+Para el presente trabajo se usaron las siguientes tecnologias:
+
+- RabbitMQ
+- Docker
+- Python3
+
+### Software Architecture
 
 La estructura del sistema se encuentra armada de manera modular, donde cada modulo tiene una responsabilidad especifica y se comunica solo con sus conocidos.
 
@@ -76,7 +76,13 @@ Los modulos o servicios son los siguientes:
 - **Downloader**: se encarga de recibir los datos desde las distintas `thumbnail_instance` y descargar los thumnbails de los videos, finalizando el caso de uso 2.
 - **Unique and Tag Filter**: se encarga de recibir los datos del `like_filter`, filtrar por tag='funny', y garantizar la unicidad, finalizando el caso de uso 1.
 
-### Flujo de Datos
+### Architectural Goals & Constraints
+
+- Distribuir el procesamiento en unidades pequeñas y escalables.
+- Utilizar un sistema de mensajeria para comunicar las distintas instancias.
+-
+
+### Logical View
 
 Los siguientes diagramas explican en cada caso de uso como es el flujo de datos.
 
@@ -92,13 +98,25 @@ Los siguientes diagramas explican en cada caso de uso como es el flujo de datos.
 
 ![DAG-3](diagramas/dag-3.png "DAG3")
 
-### Arquitectura a nivel general
+### Process View
+
+Se presentan los siguientes diagramas que explican algunas ideas de como funcionan los procesos.
+
+- [Diagrama de Actividades que explica la interacción entre el Cliente/Dropper y Joiner](diagramas/drop-and-join-activity.png)
+
+- [Diagrama de Secuencia que muestra el ruteo entre una Thumbnail Router y una instancia Routing Instance](diagramas/sequence_routing.png)
+
+### Development View
+
+Para la estructura general de desarrollo se uso el siguiente paquete modelo, donde cada paquete esta compuesto por un Worker y el Middleware.
+
+- [Diagrama de Paquetes que explica el modelo basico Worker / Middleware utilizado](diagramas/package-joiner.png)
+
+### Physical View
 
 El sistema posee la siguiente arquitectura:
 
 ![alt text](diagramas/robustez.png "Diagrama de robustez")
-
-### Despliegue
 
 Cada módulo se encuentra deployado en un contenedor individual permitiendo de esta manera su escalabilidad. El sistema entero se encuentra comunicado a traves de una instancia de Rabbit MQ, conocida por todos.
 
@@ -109,11 +127,3 @@ Se puede visualizar en el siguiente diagrama:
 ### Problemas encontrados
 
 A lo largo del desarrollo nos encontramos con algunos siguientes inconvenientes propios de RabbitMQ. Uno de ellos producia que una de las colas de rabbitmq obtenga mensajes ilimitadamente generando la perdida de la instancia. Esto era causado por el AutoACK en True. Una caracteristica que tiene el framework que permite confirmar la recepcion del mensaje apenas es entregado. Se soluciono difiriendo la confirmacion del mensaje.
-
-### Otros Diagramas
-
-Para completar la explicación de la solucion se dejan los siguientes diagramas:
-
-- [Diagrama de Actividades que explica la interaccion entre el Cliente/Dropper y Joiner](diagramas/drop-and-join-activity.png)
-
-- [Diagrama de Paquetes que explica el modelo basico Worker / Middleware utilizado](diagramas/package-joiner.png)

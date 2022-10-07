@@ -1,4 +1,5 @@
-version: "3"
+
+version: '3'
 services:
   rabbitmq:
     container_name: rabbitmq
@@ -7,7 +8,7 @@ services:
       - 5672:5672
       - 15672:15672
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:15672']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,11 +29,11 @@ services:
       - FILE_READER_LINES=20
       - THUMBNAIL_PATH=.temp
     volumes:
-      - ./data:/workspace/data
+      - ./raw_data:/workspace/data
       - ./.temp:/workspace/.temp
   joiner:
     deploy:
-      replicas: 2
+      replicas: 4
     build:
       context: ./
       dockerfile: ./joiner/Dockerfile
@@ -45,7 +46,7 @@ services:
       - LOGGING_LEVEL=INFO
   dropper:
     deploy:
-      replicas: 3
+      replicas: 1
     build:
       context: ./
       dockerfile: ./dropper/Dockerfile
