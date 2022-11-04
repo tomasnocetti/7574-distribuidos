@@ -17,11 +17,25 @@ up:
 	make docker-compose-logs
 .PHONY: docker-compose-up
 
+nup: 
+	docker compose up --build
+	make docker-compose-nlogs
+.PHONY: docker-compose-nup
+
 down:
 	docker-compose -f docker-compose.yaml stop -t 1
 	docker-compose -f docker-compose.yaml down
 .PHONY: docker-compose-down
 
+ndown:
+	docker compose -f docker-compose.yaml stop -t 1
+	docker compose -f docker-compose.yaml down
+.PHONY: docker-compose-ndown
+
 logs:
 	docker-compose logs -f
 .PHONY: docker-compose-logs
+
+nlogs:
+	docker compose logs -f
+.PHONY: docker-compose-nlogs
