@@ -254,6 +254,7 @@ services:
       - DROPPER_INSTANCES=2
       - TRENDING_INSTANCES=2
       - LIKE_FILTER_INSTANCES=2
+      - THUMBNAIL_INSTANCES=2
       - WATCHERS_INSTANCES=2
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -275,6 +276,7 @@ services:
       - DROPPER_INSTANCES=2
       - TRENDING_INSTANCES=2
       - LIKE_FILTER_INSTANCES=2
+      - THUMBNAIL_INSTANCES=2
       - WATCHERS_INSTANCES=2
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
