@@ -1,12 +1,12 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import CategoryMessage, MessageEnd, VideoMessage
-from common.worker import Worker
 from datetime import datetime
 from .model import ThumbnailGrouper
 
 
-class ThumbnailInstance(Worker):
+class ThumbnailInstance(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
         self.processed = []

@@ -1,11 +1,10 @@
 import logging
-
-from common.message import CategoryMessage, FileMessage, MessageEnd, MessageStart, VideoMessage
-from common.worker import Worker
+from common.heartbeathed_worker import HeartbeathedWorker
+from common.message import CategoryMessage, FileMessage, MessageEnd, VideoMessage
 from src.model import CategoryMapper
 
 
-class Joiner(Worker):
+class Joiner(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
 

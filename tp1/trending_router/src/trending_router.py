@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import MessageEnd, VideoMessage
-from common.worker import Worker
 
 
-class TrendingRouter(Worker):
+class TrendingRouter(HeartbeathedWorker):
     def __init__(self, middleware, instances) -> None:
         super().__init__(middleware)
         self.nr_instances = instances
