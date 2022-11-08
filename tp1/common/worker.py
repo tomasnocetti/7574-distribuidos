@@ -1,4 +1,5 @@
 import logging
+import os
 import signal
 
 from .middleware import Middleware
@@ -7,6 +8,7 @@ from .middleware import Middleware
 class Worker():
     def __init__(self, middleware) -> None:
         self.running = True
+        self.id = os.environ['SERVICE_ID']
         signal.signal(signal.SIGTERM, self.exit_gracefully)
         signal.signal(signal.SIGINT, self.exit_gracefully)
 

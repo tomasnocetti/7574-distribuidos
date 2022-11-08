@@ -3,11 +3,11 @@ from io import StringIO
 import logging
 
 from common.message import FileMessage, MessageEnd, VideoMessage
-from common.worker import Worker
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.constants import DATA_SUBFIX
 
 
-class Dropper(Worker):
+class Dropper(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
 
