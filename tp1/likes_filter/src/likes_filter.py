@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import MessageEnd, VideoMessage
-from common.worker import Worker
 
 
-class LikesFilter(Worker):
+class LikesFilter(HeartbeathedWorker):
     def __init__(self, middleware, filter_qty) -> None:
         super().__init__(middleware)
         self.filter_qty = filter_qty

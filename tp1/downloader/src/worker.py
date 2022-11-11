@@ -1,13 +1,13 @@
 import logging
 
-from common.message import EndResult2, MessageEnd, Result2, Result3, VideoMessage
-from common.worker import Worker
+from common.heartbeathed_worker import HeartbeathedWorker
+from common.message import EndResult2, MessageEnd, Result2, VideoMessage
 from requests import get  # to make GET request
 
 BUFFER_SIZE = 50
 
 
-class DownloaderInstance(Worker):
+class DownloaderInstance(HeartbeathedWorker):
     def __init__(self, middleware, instances) -> None:
         super().__init__(middleware)
         self.instances = instances

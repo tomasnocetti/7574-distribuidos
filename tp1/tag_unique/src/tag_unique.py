@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import EndResult1, MessageEnd, Result1, VideoMessage
-from common.worker import Worker
 
 
-class TagUnique(Worker):
+class TagUnique(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
         self.items = set()

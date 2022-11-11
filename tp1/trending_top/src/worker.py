@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import EndResult3, Result3
-from common.worker import Worker
 
 
-class TrendingTop(Worker):
+class TrendingTop(HeartbeathedWorker):
     def __init__(self, middleware, trending_instances) -> None:
         super().__init__(middleware)
         self.results_counter = 0

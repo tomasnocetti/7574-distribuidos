@@ -1,11 +1,11 @@
 import logging
 
-from common.message import EndResult3, MessageEnd, Result3, VideoMessage
-from common.worker import Worker
+from common.heartbeathed_worker import HeartbeathedWorker
+from common.message import MessageEnd, Result3, VideoMessage
 from datetime import datetime
 
 
-class TrendingInstance(Worker):
+class TrendingInstance(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
         self.dates = {}

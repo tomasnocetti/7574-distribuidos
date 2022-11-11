@@ -9,8 +9,6 @@ from src.hierarchy_worker import HierarchyWorker
 WATCHER_QUEUE = "watcher_queue"
 WATCHER_HIERARCHY_QUEUE = "watcher_hierarchy_queue"
 
-logging.getLogger("pika").propagate = False
-
 class Watcher(HierarchyWorker):
     def __init__(self) -> None:
         super().__init__()
@@ -22,6 +20,7 @@ class Watcher(HierarchyWorker):
 
     def start(self):
         logging.info('Starting Watcher')
+        self.heartbeats.init_hearbeats()
         super().start()
         self.watcher_middleware.run()
         self.watcher_middleware.accept_heartbeats(self.handle_heartbeat)
@@ -34,11 +33,17 @@ class Watcher(HierarchyWorker):
 
     def wake_up_services(self, unavailable_services: list):
         if self.im_leader():
-            logging.info('Waking up services[{}]')
             for service in unavailable_services:
                 logging.debug("Starting unavailable service [{}]".format(service))
-                self.docker.api.stop(service)
-                self.docker.api.start(service)
+                self.wake_up(service)
+
+    def wake_up(self, service):
+        self.docker.api.stop(service)
+        self.docker.api.start(service)
+
+    def start_up(self, service):
+        self.docker.api.stop(service)
+        #Como hacer para iniciar el contenedor?
     
     def exit_gracefully(self, *args):
         logging.info('Exiting gracefully')

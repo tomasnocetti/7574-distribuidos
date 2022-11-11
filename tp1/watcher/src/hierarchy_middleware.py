@@ -12,7 +12,29 @@ HEARBEAT_FRECUENCY = 1
 FIRST_INSTANCE = 0
 
 class HierarchyMiddlware(Middleware):
+    """HierarchyMiddlware
+    This class provides a communication layer between hierarchy workers.
+    The communication can be 
+        * Master - Slave
+        * Slave - Slave
+    """
+
     def __init__(self, neighborhood, hierarchy_id, hierarchy_instances) -> None:
+        """
+        Creates a new istance of HierarchyMiddleware
+
+        :param neighborhood:
+            This parameter represents a reference point where all the neighbors (workers) will be. 
+            There will be `hierarchy_instances` slaves and one master. 
+            `neighborhood` is any base parameter that allows dynamically creating identifiers for any neighbor. 
+            This could be, for example, a prefix for a message queue name or a TCP connection base port.
+        :param hierarchy_id:
+            Hierarchy instance ID.
+            It uniquely represents the worker and provides information to the neighborhood to be able to communicate with the worker.
+        :param hierarchy_instances:
+            Number of Hierarchy instances.
+            Represents the number of neighbors in `neighborhood`
+        """
         super().__init__()
         self.leader = Value('i', -1)
         self.running = Value(c_bool, False)
