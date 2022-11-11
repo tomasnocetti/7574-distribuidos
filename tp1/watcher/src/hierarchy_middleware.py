@@ -69,7 +69,7 @@ class HierarchyMiddlware(Middleware):
         while self.running.value:
             logging.debug("Im leader? [{}]".format(self.im_leader()))
             if self.im_leader():
-                logging.info("Sending heartbeat to all slaves")
+                logging.debug("Sending heartbeat to all slaves")
                 for slave_id in range(self.hyerarchy_instances):
                     if (slave_id) != self.hyerarchy_id:
                         leader_message = Leader(self.hyerarchy_id).to_string()

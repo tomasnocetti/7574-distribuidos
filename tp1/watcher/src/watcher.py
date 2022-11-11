@@ -26,7 +26,7 @@ class Watcher(HierarchyWorker):
         self.watcher_middleware.accept_heartbeats(self.handle_heartbeat)
 
     def handle_heartbeat(self, heartbeat):
-        logging.info('Handling hearbeat [{}]'.format(heartbeat))
+        logging.debug('Handling hearbeat [{}]'.format(heartbeat))
         self.heartbeats.hearbeat(heartbeat)
         unavailable_services = self.heartbeats.get_unavailable_services()
         self.wake_up_services(unavailable_services)

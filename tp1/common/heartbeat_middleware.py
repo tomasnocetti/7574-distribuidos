@@ -25,7 +25,7 @@ class HeartbeatMiddleware(Middleware):
 
     def report(self):
         while self.reporting:
-            logging.info("Sending heartbeat")
+            logging.debug("Sending heartbeat")
             super().send_to_exchange(WATCHER_EXCHANGE, '', self.heartbeat_id)
             time.sleep(HEARTBEAT_FRECUENCY)
 
