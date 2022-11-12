@@ -1,6 +1,6 @@
 
 import os
-from watcher.src.hierarchy_queue_middleware import HierarchyQueueMiddlware
+from src.hierarchy_queue_middleware import HierarchyQueueMiddlware
 
 WATCHER_GROUP = "watcher"
 

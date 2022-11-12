@@ -4,7 +4,7 @@ import time
 from common.middleware import Middleware
 from multiprocessing import Process, Value
 
-from src.election import Election, LeaderElection, Leader, LeaderSelected
+from src.election_message import ElectionMessage, LeaderElectionMessage, AnswerMessage, CoordinationMessage
 from src.election_state import NotParticipating, Participating
 
 MASTER_TIMEOUT = 5
@@ -72,7 +72,7 @@ class HierarchyQueueMiddlware(Middleware):
                 logging.info("Sending heartbeat to all slaves")
                 for slave_id in range(self.hyerarchy_instances):
                     if (slave_id) != self.hyerarchy_id:
-                        leader_message = Leader(self.hyerarchy_id).to_string()
+                        leader_message = AnswerMessage(self.hyerarchy_id).to_string()
                         super().send_message(self.neighborhood + "_" + str(slave_id), leader_message)
             time.sleep(HEARBEAT_FRECUENCY)
             
@@ -106,11 +106,11 @@ class HierarchyQueueMiddlware(Middleware):
                     
     def handle_heartbeat(self, heartbeat: str):
         logging.info('Handling hearbeat [{}]'.format(heartbeat))
-        election = Election.of(heartbeat)
-        if Leader.is_election(election):
+        election = ElectionMessage.of(heartbeat)
+        if AnswerMessage.is_election(election):
             logging.info("Leader is alive")
             return
-        if LeaderElection.is_election(election):
+        if LeaderElectionMessage.is_election(election):
             logging.info("Leader election in progress")
             self.leader.value = -1
             if NotParticipating.is_state(self.election_state):
@@ -126,9 +126,9 @@ class HierarchyQueueMiddlware(Middleware):
                 if election.id == self.hyerarchy_id:
                     logging.debug("Im the New Leader!")
                     self.election_state = NotParticipating()
-                    leader_selected = LeaderSelected(self.hyerarchy_id)
+                    leader_selected = CoordinationMessage(self.hyerarchy_id)
                     super().send_message(self.neighbour_queue, leader_selected.to_string())
-        if LeaderSelected.is_election(election):
+        if CoordinationMessage.is_election(election):
             logging.info("New Leader was selected [{}]".format(election.id))
             self.leader.value = election.id
             self.election_state = NotParticipating()
@@ -139,7 +139,7 @@ class HierarchyQueueMiddlware(Middleware):
     def start_election(self):
         logging.info("Starting master election")
         self.leader.value = -1
-        election = LeaderElection(self.hyerarchy_id)
+        election = LeaderElectionMessage(self.hyerarchy_id)
         super().send_message(self.neighbour_queue, election.to_string())
 
     def stop(self):
