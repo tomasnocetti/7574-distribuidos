@@ -239,6 +239,7 @@ do
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - SERVICE_ID=watcher_${i}
+      - SERVICE_PORT=8080
       - LOGGING_LEVEL=INFO
       - INSTANCE_ID=${i}
       - JOINER_INSTANCES=$REPLICAS_JOINER

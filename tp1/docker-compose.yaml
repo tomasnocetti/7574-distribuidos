@@ -248,6 +248,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - SERVICE_ID=watcher_0
+      - SERVICE_PORT=8080
       - LOGGING_LEVEL=INFO
       - INSTANCE_ID=0
       - JOINER_INSTANCES=2
@@ -270,6 +271,7 @@ services:
     environment:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - SERVICE_ID=watcher_1
+      - SERVICE_PORT=8080
       - LOGGING_LEVEL=INFO
       - INSTANCE_ID=1
       - JOINER_INSTANCES=2

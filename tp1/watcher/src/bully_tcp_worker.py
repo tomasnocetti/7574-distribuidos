@@ -1,7 +1,7 @@
 
 import os
 
-from watcher.src.bully_tcp_middleware import BullyTCPMiddlware
+from src.bully_tcp_middleware import BullyTCPMiddlware
 
 class BullyTCPWorker:
     """BullyTCPWorker

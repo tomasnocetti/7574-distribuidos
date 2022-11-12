@@ -48,7 +48,7 @@ class LeaderElectionMessage(ElectionMessage):
     def is_election(election: ElectionMessage) -> bool:
         return election.type == LEADER_ELECTION_MESSAGE
 
-class CoordinationMessage(ElectionMessage):
+class CoordinatorMessage(ElectionMessage):
     def __init__(self, id) -> None:
         super().__init__(COORDINATOR_MESSAGE, id)
         self.CODE = COORDINATOR_MESSAGE

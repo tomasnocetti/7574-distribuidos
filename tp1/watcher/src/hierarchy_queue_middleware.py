@@ -4,7 +4,7 @@ import time
 from common.middleware import Middleware
 from multiprocessing import Process, Value
 
-from src.election_message import ElectionMessage, LeaderElectionMessage, AnswerMessage, CoordinationMessage
+from src.election_message import ElectionMessage, LeaderElectionMessage, AnswerMessage, CoordinatorMessage
 from src.election_state import NotParticipating, Participating
 
 MASTER_TIMEOUT = 5
@@ -126,9 +126,9 @@ class HierarchyQueueMiddlware(Middleware):
                 if election.id == self.hyerarchy_id:
                     logging.debug("Im the New Leader!")
                     self.election_state = NotParticipating()
-                    leader_selected = CoordinationMessage(self.hyerarchy_id)
+                    leader_selected = CoordinatorMessage(self.hyerarchy_id)
                     super().send_message(self.neighbour_queue, leader_selected.to_string())
-        if CoordinationMessage.is_election(election):
+        if CoordinatorMessage.is_election(election):
             logging.info("New Leader was selected [{}]".format(election.id))
             self.leader.value = election.id
             self.election_state = NotParticipating()
