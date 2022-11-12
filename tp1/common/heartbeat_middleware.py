@@ -1,10 +1,10 @@
 import logging
+from common.constants import HEARTBEAT_FRECUENCY
 from common.middleware import Middleware
 from multiprocessing import Process
 import time
 
 WATCHER_EXCHANGE = 'watcher_exchange'
-HEARTBEAT_FRECUENCY = 1 #In seconds
 
 logging.getLogger("pika").propagate = False
 

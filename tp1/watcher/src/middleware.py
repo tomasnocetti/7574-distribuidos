@@ -1,6 +1,6 @@
 import logging
 from common.middleware import Middleware
-from src.heartbeats import SERVICE_TIMEOUT_SECONDS
+from src.heartbeats import SERVICE_HEARTBEAT_TIMEOUT
 
 WATCHER_EXCHANGE = 'watcher_exchange'
 WATCHER_QUEUE = 'watcher_queue'
@@ -21,7 +21,7 @@ class WatcherMiddlware(Middleware):
 
     def accept_heartbeats(self, callback):
         # Get ten messages and break out
-        for method_frame, properties, body in self.channel.consume(queue=self.queue, inactivity_timeout=SERVICE_TIMEOUT_SECONDS):
+        for method_frame, properties, body in self.channel.consume(queue=self.queue, inactivity_timeout=SERVICE_HEARTBEAT_TIMEOUT):
             if not self.running:
                 logging.info("Breacking consume loop")
                 break
