@@ -11,8 +11,8 @@ MASTER_TIMEOUT = 5
 HEARBEAT_FRECUENCY = 1
 FIRST_INSTANCE = 0
 
-class HierarchyMiddlware(Middleware):
-    """HierarchyMiddlware
+class HierarchyQueueMiddlware(Middleware):
+    """HierarchyQueueMiddlware
     This class provides a communication layer between hierarchy workers.
     The communication can be 
         * Master - Slave
@@ -21,7 +21,7 @@ class HierarchyMiddlware(Middleware):
 
     def __init__(self, neighborhood, hierarchy_id, hierarchy_instances) -> None:
         """
-        Creates a new istance of HierarchyMiddleware
+        Creates a new istance of HierarchyQueueMiddlware
 
         :param neighborhood:
             This parameter represents a reference point where all the neighbors (workers) will be. 

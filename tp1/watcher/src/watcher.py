@@ -4,12 +4,12 @@ import docker
 
 from src.heartbeats import Heartbeats
 from src.middleware import WatcherMiddlware
-from src.hierarchy_worker import HierarchyWorker
+from src.hierarchy_queue_worker import HierarchyQueueWorker
 
 WATCHER_QUEUE = "watcher_queue"
 WATCHER_HIERARCHY_QUEUE = "watcher_hierarchy_queue"
 
-class Watcher(HierarchyWorker):
+class Watcher(HierarchyQueueWorker):
     def __init__(self) -> None:
         super().__init__()
         self.heartbeats = Heartbeats()

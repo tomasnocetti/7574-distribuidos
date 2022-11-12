@@ -1,11 +1,11 @@
 
 import os
-from src.hierarchy_middleware import HierarchyMiddlware
+from watcher.src.hierarchy_queue_middleware import HierarchyQueueMiddlware
 
 WATCHER_GROUP = "watcher"
 
-class HierarchyWorker:
-    """HierarchyWorker
+class HierarchyQueueWorker:
+    """HierarchyQueueWorker
     This class represents worker with specific Hierarchy.
     The Master is worker who has responsability to perform a certain activity.
     The Slaves are replicated workers to ensure the availability of the task to be executed.
@@ -14,7 +14,7 @@ class HierarchyWorker:
         self.id = os.environ['SERVICE_ID']
         self.hyerarchy_id = os.environ['INSTANCE_ID']
         self.hyerarchy_instances = os.environ['WATCHERS_INSTANCES']
-        self.hierarchy_middleware = HierarchyMiddlware(WATCHER_GROUP, self.hyerarchy_id, self.hyerarchy_instances)
+        self.hierarchy_middleware = HierarchyQueueMiddlware(WATCHER_GROUP, self.hyerarchy_id, self.hyerarchy_instances)
 
     def im_leader(self) -> bool:
         return self.hierarchy_middleware.im_leader()
