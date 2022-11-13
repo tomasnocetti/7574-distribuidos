@@ -9,10 +9,11 @@ WATCHER_GROUP = "watcher"
 BUFFER_SIZE = 1024
 ENCODING = "utf-8"
 
+NO_LEADER = -1
+CHECK_LEADER_RETRIES = 5
+
 LEADER_TIMEOUT = 5 #In seconds
 CHECK_FRECUENCY = 1 #In seconds
-FIRST_INSTANCE = 0
-NO_LEADER = -1
 
 class BullyTCPMiddlware:
     """BullyTCPMiddlware
@@ -26,11 +27,13 @@ class BullyTCPMiddlware:
         """
         Creates a new istance of BullyTCPMiddlware
         """
+        ####CRITIC SECTION####
+        self.running = Value(c_bool, False)
+        self.leader = Value(c_int, NO_LEADER)
+        ######################
         self.port = int(port)
         self.bully_id = int(bully_id)
-        self.running = Value(c_bool, False)
         self.bully_instances = int(bully_instances)
-        self.leader = Value(c_int, NO_LEADER)
         self.start_process: Process = None
         self.check_process: Process = None
         self.listening_process: Process = None
@@ -45,8 +48,8 @@ class BullyTCPMiddlware:
         self.listening_process.start()
         self.start_process = Process(target=self._send_first_leader)
         self.start_process.start()
-        #self.check_process = Process(target=self._check_leader_alive)
-        #self.check_process.start()
+        self.check_process = Process(target=self._check_leader_alive)
+        self.check_process.start()
 
     def _send_first_leader(self):
         self._setme_as_leader()
@@ -76,17 +79,26 @@ class BullyTCPMiddlware:
         self._handle_message(connection, message)
 
     def _check_leader_alive(self):
+        checking_tries = 0
         while self.running.value:
-            if not self.im_leader():
-                logging.info("Checking leader alives")
-                host = WATCHER_GROUP + "_" + str(self.leader.value)
-                port = self.port
-                with socket.create_connection((host, port)) as connection:
-                    message = AliveMessage(self.bully_id)
-                    connection.sendall(message.to_string().encode(ENCODING))
-                    expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                    response = self._recv(connection, expected_length_message)
-                    self._handle_message(connection, response)
+            if checking_tries == CHECK_LEADER_RETRIES:
+                logging.info("Leader is not responding")
+                self._start_election()
+            elif not self.im_leader() and (self.leader.value != NO_LEADER):
+                try:
+                    logging.info("Checking leader alives")
+                    host = WATCHER_GROUP + "_" + str(self.leader.value)
+                    port = self.port
+                    with socket.create_connection((host, port)) as connection:
+                        message = AliveMessage(self.bully_id)
+                        connection.sendall(message.to_string().encode(ENCODING))
+                        expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
+                        response = self._recv(connection, expected_length_message)
+                        self._handle_message(connection, response)
+                    checking_tries = 0
+                except socket.error as error:
+                    logging.error("Error while create connection to socket. Error: {}".format(error))
+                    checking_tries+=1
             time.sleep(CHECK_FRECUENCY)
 
     def _send_to_sups(self, message: str):
