@@ -27,7 +27,7 @@ class Heartbeats:
     def _init_service_hearbeats(self, service_name, service_instances):
         for i in range(service_instances):
             service_id = service_name + "_" + str(i)
-            self.hearbeats[service_id] = NO_HEARTBEAT_CODE
+            self.hearbeat(service_id)
 
     def get_unavailable_services(self) -> list:
         unavailable_services = list()
