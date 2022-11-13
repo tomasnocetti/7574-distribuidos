@@ -35,7 +35,7 @@ class WatcherMiddlware(Middleware):
                 # Display the message parts
                 logging.debug("Method Frame [{}]".format(method_frame))
                 logging.debug("Properties [{}]".format(properties))
-                logging.info("Message [{}]".format(body))
+                logging.debug("Message Body [{}]".format(body))
                 heartbeat = body.decode()
                 # Acknowledge the message
                 self.channel.basic_ack(method_frame.delivery_tag)
