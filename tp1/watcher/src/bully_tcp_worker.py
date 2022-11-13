@@ -19,6 +19,7 @@ class BullyTCPWorker:
 
     def im_leader(self) -> bool:
         return self.bully_middleware.im_leader()
+        #return False
 
     def start(self):
         self.bully_middleware.run()
