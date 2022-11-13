@@ -17,12 +17,12 @@ class BullyTCPWorker:
         self.bully_instances = os.environ['WATCHERS_INSTANCES']
         self.bully_middleware = BullyTCPMiddlware(self.port, self.instance_id, self.bully_instances)
 
+    def start(self):
+        self.bully_middleware.run()
+
     def im_leader(self) -> bool:
         return self.bully_middleware.im_leader()
         #return False
-
-    def start(self):
-        self.bully_middleware.run()
 
     def stop(self):
         self.bully_middleware.stop()

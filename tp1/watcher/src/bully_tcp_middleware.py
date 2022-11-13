@@ -1,4 +1,4 @@
-from ctypes import c_bool
+from ctypes import c_bool, c_int
 import logging
 import socket
 import time
@@ -30,33 +30,34 @@ class BullyTCPMiddlware:
         self.bully_id = int(bully_id)
         self.running = Value(c_bool, False)
         self.bully_instances = int(bully_instances)
-        self.init_leader()
+        self.leader = Value(c_int, NO_LEADER)
+        self.start_process: Process = None
         self.check_process: Process = None
         self.listening_process: Process = None
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('', self.port))
         self.server_socket.listen(self.bully_instances)
 
-    def init_leader(self):
-        if self.bully_id == (self.bully_instances - 1):
-            self.leader = Value('i', self.bully_id)
-        else:
-            self.leader = Value('i', NO_LEADER)
-
     def run(self):
         logging.info("BullyTCPMiddlware started")
         self.running.value = True
-        #self.listening_process = Process(target=self._accept_connections)
-        #self.listening_process.start()
-        #self._send_first_leader()
+        self.listening_process = Process(target=self._accept_connections)
+        self.listening_process.start()
+        self.start_process = Process(target=self._send_first_leader)
+        self.start_process.start()
         #self.check_process = Process(target=self._check_leader_alive)
         #self.check_process.start()
 
     def _send_first_leader(self):
+        self._setme_as_leader()
         if self.im_leader():
             logging.info("Sending first coordinator message")
             election = CoordinatorMessage(self.bully_id)
             self._send_to_all(election.to_string())
+
+    def _setme_as_leader(self):
+        if self.bully_id == (self.bully_instances -1):
+            self.leader.value = self.bully_id
 
     def _accept_connections(self):
         logging.info("Accept connections in port [{}]".format(self.port))
@@ -78,15 +79,14 @@ class BullyTCPMiddlware:
         while self.running.value:
             if not self.im_leader():
                 logging.info("Checking leader alives")
-                with self.leader.get_lock():
-                    host = WATCHER_GROUP + "_" + str(self.leader.value)
-                    port = self.port
-                    with socket.create_connection((host, port)) as connection:
-                        message = AliveMessage(self.bully_id)
-                        connection.sendall(message.to_string().encode(ENCODING))
-                        expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                        response = self._recv(connection, expected_length_message)
-                        self._handle_message(connection, response)
+                host = WATCHER_GROUP + "_" + str(self.leader.value)
+                port = self.port
+                with socket.create_connection((host, port)) as connection:
+                    message = AliveMessage(self.bully_id)
+                    connection.sendall(message.to_string().encode(ENCODING))
+                    expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
+                    response = self._recv(connection, expected_length_message)
+                    self._handle_message(connection, response)
             time.sleep(CHECK_FRECUENCY)
 
     def _send_to_sups(self, message: str):
@@ -102,9 +102,10 @@ class BullyTCPMiddlware:
 
     def _send_to_all(self, message: str):
         for instance_id in range(self.bully_instances):
-            if (instance_id) != self.bully_id:
+            if instance_id != self.bully_id:
                 host = WATCHER_GROUP + "_" + str(instance_id)
                 port = self.port
+                logging.info("Sending [{}] to Host [{}] and Port [{}]".format(message, host, port))
                 with socket.create_connection((host, port)) as connection:
                     connection.sendall(message.encode(ENCODING))
                     expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
@@ -131,8 +132,7 @@ class BullyTCPMiddlware:
                 logging.info("Leader is alive")
         if LeaderElectionMessage.is_election(election):
             logging.info("Leader election in progress")
-            with self.leader.get_lock():
-                self.leader.value = NO_LEADER
+            self.leader.value = NO_LEADER
             answer_message = AnswerMessage(self.bully_id)
             connection.sendall(answer_message.to_string().encode(ENCODING))
             self._start_election()
@@ -143,25 +143,21 @@ class BullyTCPMiddlware:
                 logging.info("Coordination message answer message receive")
             else:
                 logging.info("New Leader was selected [{}]".format(election.id))
-                with self.leader.get_lock():
-                    self.leader.value = election.id
+                self.leader.value = election.id
                 connection.sendall(message.encode(ENCODING))
 
     def _start_election(self):
         logging.info("Starting master election")
-        with self.leader.get_lock():
-            self.leader.value = NO_LEADER
+        self.leader.value = NO_LEADER
         election = LeaderElectionMessage(self.bully_id)
         self._send_to_sups(election.to_string())
 
     def im_leader(self) -> bool:
-        im_the_leader = False
-        with self.leader.get_lock():
-            im_the_leader = (self.bully_id == self.leader.value)
-        return im_the_leader
+        return (self.bully_id == self.leader.value)
 
     def stop(self):
         self.running.value = False
         #self.check_process.join()
-        #self.listening_process.join()
+        self.start_process.join()
+        self.listening_process.join()
         self.server_socket.close()
