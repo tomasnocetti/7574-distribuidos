@@ -2,6 +2,7 @@ BASE_LENGTH_MESSAGE = 3
 ALIVE_MESSAGE = 'LM'
 ANSWER_MESSAGE = 'AM'
 COORDINATOR_MESSAGE = 'CM'
+TIMEOUT_MESSAGE = 'TO'
 LEADER_ELECTION_MESSAGE = 'EM'
 
 class ElectionMessage:
@@ -56,3 +57,12 @@ class CoordinatorMessage(ElectionMessage):
     @staticmethod
     def is_election(election: ElectionMessage) -> bool:
         return election.type == COORDINATOR_MESSAGE
+
+class TimeoutMessage(ElectionMessage):
+    def __init__(self) -> None:
+        super().__init__(TIMEOUT_MESSAGE, -1)
+        self.CODE = TIMEOUT_MESSAGE
+
+    @staticmethod
+    def is_election(election: ElectionMessage) -> bool:
+        return election.type == TIMEOUT_MESSAGE
