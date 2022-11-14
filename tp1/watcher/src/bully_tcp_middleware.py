@@ -35,7 +35,7 @@ class BullyTCPMiddlware:
         self.port = int(port)
         self.bully_id = int(bully_id)
         self.bully_instances = int(bully_instances)
-        self.start_process: Process = None
+        self.first_call_process: Process = None
         self.check_process: Process = None
         self.listening_process: Process = None
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,14 +47,20 @@ class BullyTCPMiddlware:
         self.running.value = True
         self.listening_process = Process(target=self._accept_connections)
         self.listening_process.start()
-        self.start_process = Process(target=self._send_first_leader)
-        self.start_process.start()
+        self.first_call_process = Process(target=self._send_first_call)
+        self.first_call_process.start()
         self.check_process = Process(target=self._check_leader_alive)
         self.check_process.start()
 
-    def _send_first_leader(self):
+    def _send_first_call(self):
+        """Send First Call.
+           If process started has higher ID, takes the leadership and tells to other process.
+           Otherwise it starts leader election.
+        """
         if self.bully_id == (self.bully_instances -1):
             self._setme_as_leader()
+        else:
+            self._start_election()
 
     def _setme_as_leader(self):
         logging.info("Setting me as leader and tell others")
@@ -123,6 +129,7 @@ class BullyTCPMiddlware:
         return sends_sucessfully
 
     def _send_to_all(self, message: str):
+        sends_sucessfully = list()
         for instance_id in range(self.bully_instances):
             if instance_id != self.bully_id:
                 host = WATCHER_GROUP + "_" + str(instance_id)
@@ -133,9 +140,12 @@ class BullyTCPMiddlware:
                         connection.sendall(message.encode(ENCODING))
                         expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
                         response = self._recv(connection, expected_length_message)
-                        self._handle_message(connection, response)
+                        handled_successfully = self._handle_message(connection, response)
+                        sends_sucessfully.append(handled_successfully)
                 except socket.error as error:
                     logging.error("Error while create connection to socket. Error: {}".format(error))
+                    sends_sucessfully.append(False)
+        return sends_sucessfully
 
     def _recv(self, connection: socket.socket, expected_length_message: int) -> str:
         data = b''
@@ -208,6 +218,7 @@ class BullyTCPMiddlware:
     def stop(self):
         self.running.value = False
         self.check_process.join()
-        self.start_process.join()
+        self.first_call_process.join()
         self.listening_process.join()
         self.server_socket.close()
+        logging.info('BullyTCPMiddlware Stopped')

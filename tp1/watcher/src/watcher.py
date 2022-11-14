@@ -16,7 +16,7 @@ class Watcher(BullyTCPWorker):
         self.watcher_middleware = WatcherMiddlware(self.id)
 
     def start(self):
-        logging.info('Starting Watcher')
+        logging.info('Watcher started')
         self.heartbeats.init_hearbeats()
         super().start()
         self.watcher_middleware.run()
@@ -46,3 +46,4 @@ class Watcher(BullyTCPWorker):
         logging.info('Exiting gracefully')
         super().stop()
         self.watcher_middleware.stop()
+        logging.info('Watcher stopped')

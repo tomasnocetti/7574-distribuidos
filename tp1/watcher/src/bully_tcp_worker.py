@@ -1,4 +1,5 @@
 
+import logging
 import os
 
 from src.bully_tcp_middleware import BullyTCPMiddlware
@@ -18,11 +19,12 @@ class BullyTCPWorker:
         self.bully_middleware = BullyTCPMiddlware(self.port, self.instance_id, self.bully_instances)
 
     def start(self):
+        logging.info("BullyTCPWorker started")
         self.bully_middleware.run()
 
     def im_leader(self) -> bool:
         return self.bully_middleware.im_leader()
-        #return False
 
     def stop(self):
         self.bully_middleware.stop()
+        logging.info('BullyTCPWorker Stopped')
