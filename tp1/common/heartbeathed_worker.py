@@ -1,20 +1,17 @@
 import os
-from .heartbeat_middleware import HeartbeatMiddleware
+from .heartbeat_job import HearthbeatJob
 from .worker import Worker
+
 
 class HeartbeathedWorker(Worker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
-        self.id = os.environ['SERVICE_ID']
-        self.heartbeat_middleware = HeartbeatMiddleware(self.id)
+        self.heartbeat_job = HearthbeatJob()
 
     def start(self):
-        try:
-            self.heartbeat_middleware.run()
-        except OSError:
-            pass
+        self.heartbeat_job.start()
         super().start()
 
     def exit_gracefully(self, *args):
-        self.heartbeat_middleware.stop()
+        self.heartbeat_job.stop()
         super().exit_gracefully()
