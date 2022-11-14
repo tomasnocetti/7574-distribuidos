@@ -23,7 +23,7 @@ class Watcher(BullyTCPWorker):
         self.watcher_middleware.accept_heartbeats(self.handle_heartbeat)
 
     def handle_heartbeat(self, heartbeat):
-        logging.info('Handling hearbeat [{}]'.format(heartbeat))
+        logging.debug('Handling hearbeat [{}]'.format(heartbeat))
         self.heartbeats.hearbeat(heartbeat)
         unavailable_services = self.heartbeats.get_unavailable_services()
         self.wake_up_services(unavailable_services)
@@ -31,7 +31,7 @@ class Watcher(BullyTCPWorker):
     def wake_up_services(self, unavailable_services: list):
         if self.im_leader():
             for service in unavailable_services:
-                logging.debug("Starting unavailable service [{}]".format(service))
+                logging.info("Starting unavailable service [{}]".format(service))
                 self.wake_up(service)
 
     def wake_up(self, service):
