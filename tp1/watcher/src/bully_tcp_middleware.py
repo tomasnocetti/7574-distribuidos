@@ -13,6 +13,7 @@ ENCODING = "utf-8"
 NO_LEADER = -1
 CHECK_LEADER_RETRIES = 5
 
+LEADER_TIMEOUT = 5 #In seconds
 ELECTION_TIMEOUT = 5 #In seconds
 CHECK_FRECUENCY = 1 #In seconds
 
@@ -62,12 +63,6 @@ class BullyTCPMiddlware:
         else:
             self._start_election()
 
-    def _setme_as_leader(self):
-        logging.info("Setting me as leader and tell others")
-        self.leader.value = self.bully_id
-        election = CoordinatorMessage(self.bully_id)
-        self._send_to_all(election.to_string())
-
     def _accept_connections(self):
         logging.info("Accept connections in port [{}]".format(self.port))
         while self.running.value:
@@ -87,8 +82,6 @@ class BullyTCPMiddlware:
     def _check_leader_alive(self):
         checking_tries = 0
         while self.running.value:
-            if self.im_leader():
-                continue
             if checking_tries == CHECK_LEADER_RETRIES:
                 logging.info("Leader is not responding")
                 self._start_election()
@@ -102,9 +95,12 @@ class BullyTCPMiddlware:
                         message = AliveMessage(self.bully_id)
                         connection.sendall(message.to_string().encode(ENCODING))
                         expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                        response = self._recv(connection, expected_length_message)
-                        self._handle_message(connection, response)
-                    checking_tries = 0
+                        response = self._recv_timeout(connection, expected_length_message, LEADER_TIMEOUT)
+                        handled_successfully = self._handle_message(connection, response)
+                        if not handled_successfully:
+                            checking_tries+=1
+                        else:
+                            checking_tries = 0        
                 except socket.error as error:
                     logging.error("Error while create connection to socket. Error: {}".format(error))
                     checking_tries+=1
@@ -139,7 +135,7 @@ class BullyTCPMiddlware:
                     with socket.create_connection((host, port)) as connection:
                         connection.sendall(message.encode(ENCODING))
                         expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                        response = self._recv(connection, expected_length_message)
+                        response = self._recv_timeout(connection, expected_length_message, ELECTION_TIMEOUT)
                         handled_successfully = self._handle_message(connection, response)
                         sends_sucessfully.append(handled_successfully)
                 except socket.error as error:
@@ -196,21 +192,27 @@ class BullyTCPMiddlware:
         elif AnswerMessage.is_election(election):
             logging.info("Leader election answer message receive")
         elif CoordinatorMessage.is_election(election):
+            self.leader.value = election.id
             if self.im_leader():
                 logging.info("Coordination message answer message receive")
             else:
                 logging.info("New Leader was selected [{}]".format(election.id))
-                self.leader.value = election.id
                 connection.sendall(message.encode(ENCODING))
         return True
 
     def _start_election(self):
-        logging.info("Starting master election")
+        logging.info("Starting leader election")
         self.leader.value = NO_LEADER
         election = LeaderElectionMessage(self.bully_id)
         election_responses = self._send_to_sups(election.to_string())
         if not any(election_responses):
             self._setme_as_leader()
+
+    def _setme_as_leader(self):
+        logging.info("Setting me as leader and tell others")
+        self.leader.value = self.bully_id
+        election = CoordinatorMessage(self.bully_id)
+        self._send_to_all(election.to_string())
 
     def im_leader(self) -> bool:
         return (self.bully_id == self.leader.value)
