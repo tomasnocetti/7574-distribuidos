@@ -4,9 +4,11 @@ import logging
 import os
 import ast
 import os
+import uuid
 
-from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, MessageStart, Result1, Result2, Result3
+from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, Result1, Result2, Result3
 from common.worker import Worker
+from common.utils import uid
 
 
 class ServerConnection(Worker):
@@ -36,6 +38,8 @@ class ServerConnection(Worker):
         self.finish3 = False
 
     def run(self):
+        self.register()
+
         self.send_categories()
 
         self.send_processed_csv()
@@ -43,18 +47,21 @@ class ServerConnection(Worker):
         self.middleware.recv_result_message(self.recv_results)
 
     def send_categories(self):
+        print(self.client_id)
+
         for file_name in self.category_files:
             logging.info(f'Sending Category File: {file_name}')
 
             with open(os.path.join(self.path, file_name)) as file:
                 data = file.read()
 
-            message = FileMessage(file_name, data)
+            message = FileMessage(self.client_id, uid(), file_name, data)
 
             # We allow ourselves to send all data at once because files are small
             self.middleware.send_category_message(message.pack())
 
-        self.middleware.send_category_message(MessageEnd().pack())
+        self.middleware.send_category_message(
+            MessageEnd(self.client_id, uid()).pack())
 
     def send_processed_csv(self):
         for file_name in self.raw_data_files:
@@ -77,13 +84,15 @@ class ServerConnection(Worker):
                     f.seek(0)
 
                     counter += 1
-                    message = FileMessage(file_name, f.read())
+                    message = FileMessage(
+                        self.client_id, uid(), file_name, f.read())
                     self.middleware.send_video_message(message.pack())
 
                 logging.info(
                     f'Sending Raw Data File: {file_name}')
 
-        self.middleware.send_video_message(MessageEnd().pack())
+        self.middleware.send_video_message(
+            MessageEnd(self.client_id, uid()).pack())
 
     def get_next_file_slice(self, f, csv_reader, header) -> bool:
         writer = csv.writer(f)
@@ -165,3 +174,10 @@ class ServerConnection(Worker):
         message = Result3.decode(message)
 
         self.results3 = message.content
+
+    '''
+        Blocking method to allow client to start processing
+    '''
+
+    def register(self):
+        self.client_id = uuid.uuid4().hex

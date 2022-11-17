@@ -1,5 +1,4 @@
 import json
-import logging
 
 
 SEPARATOR = '|'
@@ -17,39 +16,58 @@ RESULT_1 = '1'
 RESULT_2 = '2'
 RESULT_3 = '3'
 
+'''
+    Returns the first element that matches the separator and the rest of the buffer
+'''
+
+
+def next_packed_element(buffer):
+    index = buffer.find(SEPARATOR)
+    if (index == -1):
+        return buffer, None
+
+    return buffer[:index], buffer[index + 1:]
+
 
 class BaseMessage:
+    def __init__(self, code, client_id, message_id):
+        self.code = code
+        self.client_id = client_id
+        self.message_id = message_id
+
     def pack(self):
-        return f'{self.CODE}'
-
-
-class MessageStart(BaseMessage):
-    def __init__(self) -> None:
-        self.CODE = MESSAGE_START
+        return f'{self.code}{SEPARATOR}{self.client_id}{SEPARATOR}{self.message_id}'
 
     @staticmethod
-    def is_message(buffer) -> bool:
-        return buffer[0] == MESSAGE_START
+    def decode(buffer):
+        code, buffer = next_packed_element(buffer)
+
+        client_id, buffer = next_packed_element(buffer)
+
+        message_id, buffer = next_packed_element(buffer)
+
+        return BaseMessage(code, client_id, message_id), buffer
 
 
 class MessageEnd(BaseMessage):
-    def __init__(self) -> None:
-        self.CODE = MESSAGE_END
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(MESSAGE_END, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
         return buffer[0] == MESSAGE_END
 
 
-class FileMessage():
+class FileMessage(BaseMessage):
 
-    def __init__(self, file_name, file_content) -> None:
-        self.CODE = MESSAGE_FILE
+    def __init__(self, client_id, message_id, file_name, file_content) -> None:
+        super().__init__(MESSAGE_FILE, client_id, message_id)
+
         self.file_name = file_name
         self.file_content = file_content
 
     def pack(self):
-        return f'{self.CODE}{SEPARATOR}{self.file_name}{SEPARATOR}{self.file_content}'
+        return f'{super().pack()}{SEPARATOR}{self.file_name}{SEPARATOR}{self.file_content}'
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -57,10 +75,11 @@ class FileMessage():
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
-        index = content.find(SEPARATOR)
+        base, buffer = super().decode(buffer)
+        file_name, buffer = next_packed_element(buffer)
+        file_content, buffer = next_packed_element(buffer)
 
-        return FileMessage(content[:index], content[index+1:])
+        return FileMessage(base.client_id, base.message_id, file_name, file_content)
 
 
 class VideoMessage():
