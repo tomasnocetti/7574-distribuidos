@@ -30,7 +30,7 @@ def next_packed_element(buffer):
 
 
 class BaseMessage:
-    def __init__(self, code, client_id, message_id):
+    def __init__(self, code, client_id, message_id=''):
         self.code = code
         self.client_id = client_id
         self.message_id = message_id
@@ -57,6 +57,12 @@ class MessageEnd(BaseMessage):
     def is_message(buffer) -> bool:
         return buffer[0] == MESSAGE_END
 
+    @classmethod
+    def decode(cls, buffer):
+        base, buffer = super().decode(buffer)
+
+        return MessageEnd(base.client_id, base.message_id)
+
 
 class FileMessage(BaseMessage):
 
@@ -76,19 +82,20 @@ class FileMessage(BaseMessage):
     @classmethod
     def decode(cls, buffer: str):
         base, buffer = super().decode(buffer)
-        file_name, buffer = next_packed_element(buffer)
-        file_content, buffer = next_packed_element(buffer)
+        file_name, file_content = next_packed_element(buffer)
+        # file_content, buffer = next_packed_element(buffer)
 
         return FileMessage(base.client_id, base.message_id, file_name, file_content)
 
 
-class VideoMessage():
-    def __init__(self, content: dict) -> None:
-        self.CODE = MESSAGE_VIDEO
+class VideoMessage(BaseMessage):
+    def __init__(self, client_id, message_id, content: dict) -> None:
+        super().__init__(MESSAGE_VIDEO, client_id, message_id)
+
         self.content = content
 
     def pack(self) -> str:
-        return f'{self.CODE}{SEPARATOR}{json.dumps(self.content)}'
+        return f'{super().pack()}{SEPARATOR}{json.dumps(self.content)}'
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -96,23 +103,23 @@ class VideoMessage():
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, json_content = super().decode(buffer)
+        
+        return VideoMessage(base.client_id, base.message_id, json.loads(json_content))
 
-        return VideoMessage(json.loads(content))
 
-
-class BaseResult:
-    def __init__(self, code, content) -> None:
-        self.code = code
+class BaseResult(BaseMessage):
+    def __init__(self, code, client_id, message_id,  content) -> None:
+        super().__init__(code, client_id, message_id)
         self.content = content
 
     def pack(self) -> str:
-        return f'{self.code}{SEPARATOR}{self.content}'
+        return f'{super().pack()}{SEPARATOR}{self.content}'
 
 
 class CategoryMessage(BaseResult):
-    def __init__(self, content) -> None:
-        super().__init__(MESSAGE_CATEGORY_COUNT, content)
+    def __init__(self, client_id, content) -> None:
+        super().__init__(MESSAGE_CATEGORY_COUNT, client_id, '', content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -120,14 +127,15 @@ class CategoryMessage(BaseResult):
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, content = super().decode(buffer)
 
-        return CategoryMessage(content)
+
+        return CategoryMessage(base.client_id, base.message_id, content)
 
 
 class Result1(BaseResult):
-    def __init__(self, content) -> None:
-        super().__init__(RESULT_1, content)
+    def __init__(self, client_id, message_id, content) -> None:
+        super().__init__(RESULT_1, client_id, message_id, content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -135,9 +143,9 @@ class Result1(BaseResult):
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, content = super().decode(buffer)
 
-        return Result1(content)
+        return Result1(base.client_id, base.message_id, content)
 
 
 class Result2(BaseResult):
@@ -182,9 +190,8 @@ class Result3(BaseResult):
 
 
 class EndResult1(BaseMessage):
-    def __init__(self) -> None:
-        super().__init__()
-        self.CODE = END_RESULT_1
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(END_RESULT_1, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -192,9 +199,8 @@ class EndResult1(BaseMessage):
 
 
 class EndResult2(BaseMessage):
-    def __init__(self) -> None:
-        super().__init__()
-        self.CODE = END_RESULT_2
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(END_RESULT_2, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -202,9 +208,8 @@ class EndResult2(BaseMessage):
 
 
 class EndResult3(BaseMessage):
-    def __init__(self) -> None:
-        super().__init__()
-        self.CODE = END_RESULT_3
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(END_RESULT_3, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:

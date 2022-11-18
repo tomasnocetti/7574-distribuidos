@@ -35,12 +35,16 @@ class Dropper(HeartbeathedWorker):
         f = StringIO(file_message.file_content)
         reader = csv.DictReader(f)
 
+        index = 0
         for row in reader:
             dropped = {your_key: row[your_key]
                        for your_key in fields}
             dropped['country'] = country
-            logging.debug(f'Proccessed message: {dropped}')
-            message = VideoMessage(dropped)
+
+            message_id = file_message.message_id + str(index)
+            logging.debug(f'Proccessed message with id: {message_id}')
+
+            message = VideoMessage(file_message.client_id, message_id, dropped)
             self.middleware.send_video_message(message.pack())
 
         f.close()

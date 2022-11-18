@@ -24,7 +24,6 @@ class HearthbeatJob():
 
         try:
             while self.running:
-                logging.debug("Sending heartbeat")
                 self.middleware.send_heartbeat()
                 time.sleep(HEARTBEAT_FRECUENCY)
 

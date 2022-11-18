@@ -24,7 +24,8 @@ class LikesFilter(HeartbeathedWorker):
         video = VideoMessage.decode(message)
 
         try:
-            if (video.content['likes'] != None and int(video.content['likes']) > self.filter_qty):
+            if (video.content['likes'] != None and int(video.content['likes']) >= self.filter_qty):
+                logging.debug(f"Found video that matches {video.content}")
                 self.middleware.send_video_message(message)
         except KeyError:
             logging.error(
