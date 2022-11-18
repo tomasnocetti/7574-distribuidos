@@ -8,6 +8,12 @@ REPLICAS_TRENDING="${3:-1}"
 REPLICAS_THUMBNAIL="${4:-1}"
 REPLICAS_LIKES_FILTER="${5:-1}"
 REPLICAS_WATCHERS="${6:-1}"
+TRENDING_ROUTER_ENABLED="${7:-1}"
+THUMBNAIL_ROUTER_ENABLED="${8:-1}"
+DOWNLOADER_ENABLED="${9:-1}"
+TAG_UNIQUE_ENABLED="${10:-1}"
+TRENDING_TOP_ENABLED="${11:-1}"
+
 FILE_NAME="docker-compose.yaml"
 
 FILTER_QTY="5000000"
@@ -43,21 +49,13 @@ services:
       - FILE_READER_LINES=20
       - THUMBNAIL_PATH=.temp
     volumes:
-      - ./raw_data:/workspace/data
-      - ./.temp:/workspace/.temp
-  tag_unique:
-    container_name: tag_unique
-    build:
-      context: ./
-      dockerfile: ./tag_unique/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - SERVICE_ID=tag_unique
-      - LOGGING_LEVEL=INFO
+      - ./data:/workspace/data
+      - ./.temp:/workspace/.temp"
+
+
+if [ $TRENDING_ROUTER_ENABLED -eq 1 ]
+then
+  TRENDING_ROUTER_INSTANCE="
   trending_router:
     container_name: trending_router
     build:
@@ -71,7 +69,14 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - SERVICE_ID=trending_router
       - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=${REPLICAS_TRENDING}
+      - TRENDING_INSTANCES=${REPLICAS_TRENDING}"
+  
+  BASE+="${TRENDING_ROUTER_INSTANCE}"
+fi
+
+if [ $THUMBNAIL_ROUTER_ENABLED -eq 1 ]
+then
+  THUMBNAIL_ROUTER_INSTANCE="
   thumbnail_router:
     container_name: thumbnail_router
     build:
@@ -85,21 +90,14 @@ services:
       - RABBIT_SERVER_ADDRESS=rabbitmq
       - SERVICE_ID=thumbnail_router
       - LOGGING_LEVEL=INFO
-      - INSTANCES=${REPLICAS_THUMBNAIL}
-  trending_top:
-    container_name: trending_top
-    build:
-      context: ./
-      dockerfile: ./trending_top/Dockerfile
-    entrypoint: python3 main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      - RABBIT_SERVER_ADDRESS=rabbitmq
-      - SERVICE_ID=trending_top
-      - LOGGING_LEVEL=INFO
-      - TRENDING_INSTANCES=${REPLICAS_TRENDING}
+      - INSTANCES=${REPLICAS_THUMBNAIL}"
+  
+  BASE+="${THUMBNAIL_ROUTER_INSTANCE}"
+fi
+
+if [ $DOWNLOADER_ENABLED -eq 1 ]
+then
+  DOWNLOADER_INSTANCE="
   downloader:
     container_name: downloader
     build:
@@ -114,6 +112,51 @@ services:
       - SERVICE_ID=downloader
       - LOGGING_LEVEL=INFO
       - THUMBNAIL_INSTANCES=${REPLICAS_THUMBNAIL}"
+  
+  BASE+="${DOWNLOADER_INSTANCE}"
+fi
+
+if [ $TAG_UNIQUE_ENABLED -eq 1 ]
+then
+  TAG_UNIQUE_INSTANCE="
+  tag_unique:
+    container_name: tag_unique
+    build:
+      context: ./
+      dockerfile: ./tag_unique/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - SERVICE_ID=tag_unique
+      - LOGGING_LEVEL=INFO"
+  
+  BASE+="${TAG_UNIQUE_INSTANCE}"
+fi
+
+if [ $TRENDING_TOP_ENABLED -eq 1 ]
+then
+  TRENDING_TOP_INSTANCE="
+  trending_top:
+    container_name: trending_top
+    build:
+      context: ./
+      dockerfile: ./trending_top/Dockerfile
+    entrypoint: python3 main.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBIT_SERVER_ADDRESS=rabbitmq
+      - SERVICE_ID=trending_top
+      - LOGGING_LEVEL=INFO
+      - TRENDING_INSTANCES=${REPLICAS_TRENDING}"
+  
+  BASE+="${TRENDING_TOP_INSTANCE}"
+fi
+
 
 for (( i = 0; i < $REPLICAS_JOINER; i++ )) 
 do
