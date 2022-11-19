@@ -1,6 +1,7 @@
 
 import os
 import time
+import docker
 import logging
 from ctypes import c_bool, c_int
 from multiprocessing import Process, Value
@@ -33,6 +34,7 @@ class BullyTCPWorker:
         self.middleware_process: Process = None
         self.start_bully_process: Process = None
         self.check_process: Process = None
+        self.docker = docker.from_env()
         ####CRITIC SECTION####
         self.running = Value(c_bool, False)
         self.leader = Value(c_int, NO_LEADER)
@@ -105,6 +107,7 @@ class BullyTCPWorker:
                         break 
                 if checking_tries == CHECK_RETRIES:
                     logging.info("Slave [{}] is not responding".format(instance_id))
+                    self.wake_up_slave(instance_id)
 
     def _check_leader_alive(self):
         """Check Leader Alive\n
@@ -126,6 +129,9 @@ class BullyTCPWorker:
 
     def wake_up_slave(self, instance_id):
         logging.info("Waking up instance with id [{}]".format(instance_id))
+        service = self.work_group + "_" + str(instance_id)
+        self.docker.api.stop(service)
+        self.docker.api.start(service)
 
     def _start_election(self):
         """Start Election\n
