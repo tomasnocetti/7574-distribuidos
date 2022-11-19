@@ -50,7 +50,7 @@ class BullyTCPMiddlware:
         self.listening_process.start()
         self.start_process = Process(target=self.start)
         self.start_process.start()
-        self.check_process = Process(target=self._check_leader_alive)
+        self.check_process = Process(target=self._check_alive)
         self.check_process.start()
 
     def start(self):
@@ -89,21 +89,22 @@ class BullyTCPMiddlware:
 
     def _check_slaves_alive(self):
         for instance_id in range(self.bully_instances):
-            checking_tries = 0
-            message = AliveMessage(self.bully_id)
-            while checking_tries < CHECK_RETRIES:
-                logging.info("Checking slave alives")
-                slave_response = self._send(message, instance_id)
-                if not slave_response:
-                    checking_tries+=1
-                else:
-                    break 
-            if checking_tries == CHECK_RETRIES:
-                logging.info("Slave is not responding")
+            if instance_id != self.bully_id:
+                checking_tries = 0
+                message = AliveMessage(self.bully_id).to_string()
+                while checking_tries < CHECK_RETRIES:
+                    logging.info("Checking slave alives")
+                    slave_response = self._send(message, instance_id)
+                    if not slave_response:
+                        checking_tries+=1
+                    else:
+                        break 
+                if checking_tries == CHECK_RETRIES:
+                    logging.info("Slave is not responding")
 
     def _check_leader_alive(self):
         checking_tries = 0
-        message = AliveMessage(self.bully_id)
+        message = AliveMessage(self.bully_id).to_string()
         while checking_tries < CHECK_RETRIES:
             logging.info("Checking leader alives")
             leader_response = self._send(message, self.leader.value)
@@ -130,8 +131,9 @@ class BullyTCPMiddlware:
     def _send_to(self, message: str, instances: list['int']) -> list['bool']:
         sends_sucessfully = list()
         for instance_id in instances:
-            send_sucessfully = self._send(message, instance_id)
-            sends_sucessfully.append(send_sucessfully)
+            if instance_id != self.bully_id:
+                send_sucessfully = self._send(message, instance_id)
+                sends_sucessfully.append(send_sucessfully)
         return sends_sucessfully
 
     def _send(self, message: str, instance_id: int) -> bool:
