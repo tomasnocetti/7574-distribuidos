@@ -2,17 +2,18 @@
 set -e
 
 # Vars 
-REPLICAS_JOINER="${1:-1}"
-REPLICAS_DROPPER="${2:-1}"
-REPLICAS_TRENDING="${3:-1}"
-REPLICAS_THUMBNAIL="${4:-1}"
-REPLICAS_LIKES_FILTER="${5:-1}"
-REPLICAS_WATCHERS="${6:-1}"
-TRENDING_ROUTER_ENABLED="${7:-1}"
-THUMBNAIL_ROUTER_ENABLED="${8:-1}"
-DOWNLOADER_ENABLED="${9:-1}"
-TAG_UNIQUE_ENABLED="${10:-1}"
-TRENDING_TOP_ENABLED="${11:-1}"
+REPLICAS_CLIENT="${1:-1}"
+REPLICAS_JOINER="${2:-1}"
+REPLICAS_DROPPER="${3:-1}"
+REPLICAS_TRENDING="${4:-1}"
+REPLICAS_THUMBNAIL="${5:-1}"
+REPLICAS_LIKES_FILTER="${6:-1}"
+REPLICAS_WATCHERS="${7:-1}"
+TRENDING_ROUTER_ENABLED="${8:-1}"
+THUMBNAIL_ROUTER_ENABLED="${9:-1}"
+DOWNLOADER_ENABLED="${10:-1}"
+TAG_UNIQUE_ENABLED="${11:-1}"
+TRENDING_TOP_ENABLED="${12:-1}"
 
 FILE_NAME="docker-compose.yaml"
 
@@ -33,9 +34,13 @@ services:
       timeout: 5s
       retries: 5
     logging:
-      driver: none
-  client:
-    container_name: client
+      driver: none"
+
+for (( i = 0; i < $REPLICAS_CLIENT; i++ )) 
+do
+  CLIENT_INSTANCE="
+  client_${i}:
+    container_name: client_${i}
     build:
       context: ./
       dockerfile: ./client/Dockerfile
@@ -49,9 +54,10 @@ services:
       - FILE_READER_LINES=20
       - THUMBNAIL_PATH=.temp
     volumes:
-      - ./data:/workspace/data
-      - ./.temp:/workspace/.temp"
-
+      - ./data/client${i}:/workspace/data
+      - ./.temp${i}:/workspace/.temp"
+  BASE+="${CLIENT_INSTANCE}"
+done
 
 if [ $TRENDING_ROUTER_ENABLED -eq 1 ]
 then
