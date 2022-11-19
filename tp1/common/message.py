@@ -175,8 +175,8 @@ class Result2(BaseResult):
 
 
 class Result3(BaseResult):
-    def __init__(self, content) -> None:
-        super().__init__(RESULT_3, content)
+    def __init__(self, client_id, message_id, content) -> None:
+        super().__init__(RESULT_3, client_id, message_id, content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -184,9 +184,9 @@ class Result3(BaseResult):
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, content = super().decode(buffer)
 
-        return Result3(content)
+        return Result3(base.client_id, base.message_id, content)
 
 
 class EndResult1(BaseMessage):

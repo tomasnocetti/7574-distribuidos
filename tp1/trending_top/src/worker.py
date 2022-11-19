@@ -30,10 +30,10 @@ class TrendingTop(HeartbeathedWorker):
         self.results_counter += 1
 
         if (self.results_counter == self.trending_instances):
-            message = Result3(self.top_date)
+            message = Result3(message.client_id, "FINAL_RESULT", self.top_date)
             self.middleware.send_result_message(message.pack())
 
-            end_message = EndResult3()
+            end_message = EndResult3(message.client_id, "FINAL_RESULT")
             self.middleware.send_result_message(end_message.pack())
             self.results_counter = 0
             self.top_date = ''
