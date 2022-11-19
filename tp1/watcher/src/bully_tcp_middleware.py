@@ -11,7 +11,7 @@ BUFFER_SIZE = 1024
 ENCODING = "utf-8"
 
 NO_LEADER = -1
-CHECK_LEADER_RETRIES = 5
+CHECK_RETRIES = 5
 
 LEADER_TIMEOUT = 5 #In seconds
 ELECTION_TIMEOUT = 5 #In seconds
@@ -36,7 +36,7 @@ class BullyTCPMiddlware:
         self.port = int(port)
         self.bully_id = int(bully_id)
         self.bully_instances = int(bully_instances)
-        self.first_call_process: Process = None
+        self.start_process: Process = None
         self.check_process: Process = None
         self.listening_process: Process = None
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,13 +48,13 @@ class BullyTCPMiddlware:
         self.running.value = True
         self.listening_process = Process(target=self._accept_connections)
         self.listening_process.start()
-        self.first_call_process = Process(target=self._send_first_call)
-        self.first_call_process.start()
+        self.start_process = Process(target=self.start)
+        self.start_process.start()
         self.check_process = Process(target=self._check_leader_alive)
         self.check_process.start()
 
-    def _send_first_call(self):
-        """Send First Call.
+    def start(self):
+        """Start.
            If process started has higher ID, takes the leadership and tells to other process.
            Otherwise it starts leader election.
         """
@@ -79,32 +79,41 @@ class BullyTCPMiddlware:
         message = self._recv(connection, expected_length_message)
         self._handle_message(connection, message)
 
+    def _check_alive(self):
+        while self.running.value:
+            if (self.leader.value != NO_LEADER) and self.im_leader():
+                self._check_slaves_alive()
+            elif (self.leader.value != NO_LEADER) and not self.im_leader():
+                self._check_leader_alive()
+            time.sleep(CHECK_FRECUENCY)
+
+    def _check_slaves_alive(self):
+        for instance_id in range(self.bully_instances):
+            checking_tries = 0
+            message = AliveMessage(self.bully_id)
+            while checking_tries < CHECK_RETRIES:
+                logging.info("Checking slave alives")
+                slave_response = self._send(message, instance_id)
+                if not slave_response:
+                    checking_tries+=1
+                else:
+                    break 
+            if checking_tries == CHECK_RETRIES:
+                logging.info("Slave is not responding")
+
     def _check_leader_alive(self):
         checking_tries = 0
-        while self.running.value:
-            if checking_tries == CHECK_LEADER_RETRIES:
-                logging.info("Leader is not responding")
-                self._start_election()
-                checking_tries = 0
-            elif not self.im_leader() and (self.leader.value != NO_LEADER):
-                try:
-                    logging.info("Checking leader alives")
-                    host = WATCHER_GROUP + "_" + str(self.leader.value)
-                    port = self.port
-                    with socket.create_connection((host, port)) as connection:
-                        message = AliveMessage(self.bully_id)
-                        connection.sendall(message.to_string().encode(ENCODING))
-                        expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                        response = self._recv_timeout(connection, expected_length_message, LEADER_TIMEOUT)
-                        handled_successfully = self._handle_message(connection, response)
-                        if not handled_successfully:
-                            checking_tries+=1
-                        else:
-                            checking_tries = 0        
-                except socket.error as error:
-                    logging.error("Error while create connection to socket. Error: {}".format(error))
-                    checking_tries+=1
-            time.sleep(CHECK_FRECUENCY)
+        message = AliveMessage(self.bully_id)
+        while checking_tries < CHECK_RETRIES:
+            logging.info("Checking leader alives")
+            leader_response = self._send(message, self.leader.value)
+            if not leader_response:
+                checking_tries+=1
+            else:
+                break 
+        if checking_tries == CHECK_RETRIES:
+            logging.info("Leader is not responding")
+            self._start_election() 
 
     def _send_to_infs(self, message: str) -> list['bool']:
         instances = range(self.bully_id)
@@ -221,7 +230,7 @@ class BullyTCPMiddlware:
     def stop(self):
         self.running.value = False
         self.check_process.join()
-        self.first_call_process.join()
+        self.start_process.join()
         self.listening_process.join()
         self.server_socket.close()
         logging.info('BullyTCPMiddlware Stopped')
