@@ -88,12 +88,12 @@ class BullyTCPMiddlware:
             time.sleep(CHECK_FRECUENCY)
 
     def _check_slaves_alive(self):
+        logging.info("Checking slaves alives")
         for instance_id in range(self.bully_instances):
             if instance_id != self.bully_id:
                 checking_tries = 0
                 message = AliveMessage(self.bully_id).to_string()
                 while checking_tries < CHECK_RETRIES:
-                    logging.info("Checking slave alives")
                     slave_response = self._send(message, instance_id, SLAVES_TIMEOUT)
                     if not slave_response:
                         checking_tries+=1
@@ -104,10 +104,10 @@ class BullyTCPMiddlware:
                     logging.info("Slave [{}] is not responding".format(instance_id))
 
     def _check_leader_alive(self):
+        logging.info("Checking leader alives")
         checking_tries = 0
         message = AliveMessage(self.bully_id).to_string()
         while checking_tries < CHECK_RETRIES:
-            logging.info("Checking leader alives")
             leader_response = self._send(message, self.leader.value, LEADER_TIMEOUT)
             if not leader_response:
                 checking_tries+=1
