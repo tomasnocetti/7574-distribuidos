@@ -107,7 +107,7 @@ class BullyTCPMiddlware:
         message = AliveMessage(self.bully_id).to_string()
         while checking_tries < CHECK_RETRIES:
             logging.info("Checking leader alives")
-            leader_response = self._send(message, self.leader.value)
+            leader_response = self._send(message, self.leader.value, LEADER_TIMEOUT)
             if not leader_response:
                 checking_tries+=1
             else:
@@ -116,30 +116,31 @@ class BullyTCPMiddlware:
             logging.info("Leader is not responding")
             self._start_election() 
 
-    def _send_to_infs(self, message: str) -> list['bool']:
+    def _send_to_infs(self, message: str, timeout: int) -> list['bool']:
         instances = range(self.bully_id)
-        return self._send_to(message, instances)
+        return self._send_to(message, instances, timeout)
 
-    def _send_to_sups(self, message: str) -> list['bool']:
+    def _send_to_sups(self, message: str, timeout: int) -> list['bool']:
         instances = range(self.bully_id, self.bully_instances)
-        return self._send_to(message, instances)
+        return self._send_to(message, instances, timeout)
 
-    def _send_to_all(self, message: str) -> list['bool']:
+    def _send_to_all(self, message: str, timeout: int) -> list['bool']:
         instances = range(self.bully_instances)
-        return self._send_to(message, instances)
+        return self._send_to(message, instances, timeout)
     
-    def _send_to(self, message: str, instances: list['int']) -> list['bool']:
+    def _send_to(self, message: str, instances: list['int'], timeout) -> list['bool']:
         sends_sucessfully = list()
         for instance_id in instances:
             if instance_id != self.bully_id:
-                send_sucessfully = self._send(message, instance_id)
+                send_sucessfully = self._send(message, instance_id, timeout)
                 sends_sucessfully.append(send_sucessfully)
         return sends_sucessfully
 
-    def _send(self, message: str, instance_id: int) -> bool:
+    def _send(self, message: str, instance_id: int, timeout: int) -> bool:
         """Send
            Send message to a instance.
-           Return bool representation of send successfully
+           If a `timeout` is specified, it waits to receive a response in that period of time.
+           Return bool representation of send successfully.
         """
         sends_sucessfully = False
         host = WATCHER_GROUP + "_" + str(instance_id)
@@ -149,7 +150,7 @@ class BullyTCPMiddlware:
             with socket.create_connection((host, port)) as connection:
                 connection.sendall(message.encode(ENCODING))
                 expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                response = self._recv_timeout(connection, expected_length_message, ELECTION_TIMEOUT)
+                response = self._recv_timeout(connection, expected_length_message, timeout)
                 sends_sucessfully = self._handle_message(connection, response)
         except socket.error as error:
             logging.error("Error while create connection to socket. Error: {}".format(error))
@@ -216,7 +217,7 @@ class BullyTCPMiddlware:
         logging.info("Starting leader election")
         self.leader.value = NO_LEADER
         election = LeaderElectionMessage(self.bully_id)
-        election_responses = self._send_to_sups(election.to_string())
+        election_responses = self._send_to_sups(election.to_string(), ELECTION_TIMEOUT)
         if not any(election_responses):
             self._setme_as_leader()
 
@@ -224,7 +225,7 @@ class BullyTCPMiddlware:
         logging.info("Setting me as leader and tell others")
         self.leader.value = self.bully_id
         election = CoordinatorMessage(self.bully_id)
-        self._send_to_all(election.to_string())
+        self._send_to_all(election.to_string(), ELECTION_TIMEOUT)
 
     def im_leader(self) -> bool:
         return (self.bully_id == self.leader.value)
