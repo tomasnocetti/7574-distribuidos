@@ -18,6 +18,11 @@ class Watcher(BullyTCPWorker):
         self.watcher_middleware = WatcherMiddlware(self.id)
 
     def start(self):
+        """Watcher.start()
+            Starts watchers processes
+            - BullyTCPWorker process (Background process)
+            - Heartbeat process (Main process)
+        """
         logging.info('Watcher started')
         self.heartbeats.init_hearbeats()
         super().start()
