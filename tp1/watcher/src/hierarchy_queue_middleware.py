@@ -4,7 +4,7 @@ import time
 from common.middleware import Middleware
 from multiprocessing import Process, Value
 
-from src.election_message import ElectionMessage, LeaderElectionMessage, AnswerMessage, CoordinatorMessage
+from src.election_message import ElectionMessage, LeaderElectionMessage, ElectionAnswerMessage, CoordinatorMessage
 from src.election_state import NotParticipating, Participating
 
 MASTER_TIMEOUT = 5
@@ -72,7 +72,7 @@ class HierarchyQueueMiddlware(Middleware):
                 logging.info("Sending heartbeat to all slaves")
                 for slave_id in range(self.hyerarchy_instances):
                     if (slave_id) != self.hyerarchy_id:
-                        leader_message = AnswerMessage(self.hyerarchy_id).to_string()
+                        leader_message = ElectionAnswerMessage(self.hyerarchy_id).to_string()
                         super().send_message(self.neighborhood + "_" + str(slave_id), leader_message)
             time.sleep(HEARBEAT_FRECUENCY)
             
@@ -107,7 +107,7 @@ class HierarchyQueueMiddlware(Middleware):
     def handle_heartbeat(self, heartbeat: str):
         logging.info('Handling hearbeat [{}]'.format(heartbeat))
         election = ElectionMessage.of(heartbeat)
-        if AnswerMessage.is_election(election):
+        if ElectionAnswerMessage.is_election(election):
             logging.info("Leader is alive")
             return
         if LeaderElectionMessage.is_election(election):

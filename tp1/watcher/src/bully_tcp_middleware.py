@@ -1,21 +1,21 @@
 from ctypes import c_bool, c_int
 import logging
 import socket
-import select
 import time
 from multiprocessing import Process, Value
-from src.election_message import BASE_LENGTH_MESSAGE, AliveMessage, ElectionMessage, LeaderElectionMessage, AnswerMessage, CoordinatorMessage, TimeoutMessage
+from src.election_message import ELECTION_LENGTH_MESSAGE, AliveAnswerMessage, AliveMessage, ElectionMessage, ErrorMessage, LeaderElectionMessage, ElectionAnswerMessage, CoordinatorMessage, TimeoutMessage
 
 WATCHER_GROUP = "watcher"
 BUFFER_SIZE = 1024
 ENCODING = "utf-8"
 
 NO_LEADER = -1
-CHECK_RETRIES = 5
+CHECK_RETRIES = 3
 
-LEADER_TIMEOUT = 5 #In seconds
-ELECTION_TIMEOUT = 5 #In seconds
-CHECK_FRECUENCY = 1 #In seconds
+LEADER_TIMEOUT = 10 #In seconds
+SLAVES_TIMEOUT = 10 #In seconds
+ELECTION_TIMEOUT = 10 #In seconds
+CHECK_FRECUENCY = 5 #In seconds
 
 class BullyTCPMiddlware:
     """BullyTCPMiddlware
@@ -64,7 +64,7 @@ class BullyTCPMiddlware:
             self._start_election()
 
     def _accept_connections(self):
-        logging.info("Accept connections in port [{}]".format(self.port))
+        logging.debug("Accept connections in port [{}]".format(self.port))
         while self.running.value:
             try:
                 connection, _addr = self.server_socket.accept()
@@ -74,8 +74,8 @@ class BullyTCPMiddlware:
                 self.server_socket.close()
             
     def _handle_connection(self, connection: socket.socket):
-        logging.info("Handling connection [{}]".format(connection))
-        expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
+        logging.debug("Handling connection [{}]".format(connection))
+        expected_length_message = ELECTION_LENGTH_MESSAGE + len(str(self.bully_instances))
         message = self._recv(connection, expected_length_message)
         self._handle_message(connection, message)
 
@@ -94,13 +94,14 @@ class BullyTCPMiddlware:
                 message = AliveMessage(self.bully_id).to_string()
                 while checking_tries < CHECK_RETRIES:
                     logging.info("Checking slave alives")
-                    slave_response = self._send(message, instance_id)
+                    slave_response = self._send(message, instance_id, SLAVES_TIMEOUT)
                     if not slave_response:
                         checking_tries+=1
+                        time.sleep(CHECK_FRECUENCY)
                     else:
                         break 
                 if checking_tries == CHECK_RETRIES:
-                    logging.info("Slave is not responding")
+                    logging.info("Slave [{}] is not responding".format(instance_id))
 
     def _check_leader_alive(self):
         checking_tries = 0
@@ -110,10 +111,11 @@ class BullyTCPMiddlware:
             leader_response = self._send(message, self.leader.value, LEADER_TIMEOUT)
             if not leader_response:
                 checking_tries+=1
+                time.sleep(CHECK_FRECUENCY)
             else:
                 break 
         if checking_tries == CHECK_RETRIES:
-            logging.info("Leader is not responding")
+            logging.info("Leader [{}] is not responding".format(self.leader.value))
             self._start_election() 
 
     def _send_to_infs(self, message: str, timeout: int) -> list['bool']:
@@ -149,7 +151,7 @@ class BullyTCPMiddlware:
         try:
             with socket.create_connection((host, port)) as connection:
                 connection.sendall(message.encode(ENCODING))
-                expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
+                expected_length_message = ELECTION_LENGTH_MESSAGE + len(str(self.bully_instances))
                 response = self._recv_timeout(connection, expected_length_message, timeout)
                 sends_sucessfully = self._handle_message(connection, response)
         except socket.error as error:
@@ -163,7 +165,7 @@ class BullyTCPMiddlware:
                 data += connection.recv(BUFFER_SIZE)
             except socket.error as error:
                 logging.error("Error while recv data from connection {}. Error: {}".format(connection, error))
-                break
+                return ErrorMessage().to_string()
         return data.decode(ENCODING)
 
     def _recv_timeout(self, connection: socket.socket, expected_length_message: int, timeout: float) -> str:
@@ -177,7 +179,8 @@ class BullyTCPMiddlware:
                 return TimeoutMessage().to_string()
             except socket.error as error:
                 logging.error("Error while recv data from connection {}. Error: {}".format(connection, error))
-                break
+                return ErrorMessage().to_string()
+        connection.settimeout(None)
         return data.decode(ENCODING)
 
     def _handle_message(self, connection: socket.socket, message: str) -> bool:
@@ -190,20 +193,26 @@ class BullyTCPMiddlware:
         if TimeoutMessage.is_election(election):
             logging.info("Timeout message!")
             return False
+        elif ErrorMessage.is_election(election):
+            logging.info("Error message!")
+            return False
         elif AliveMessage.is_election(election):
-            if self.im_leader():
-                logging.info("Responding alive message")
-                connection.sendall(message.encode(ENCODING))
-            else:
-                logging.info("Leader is alive")
+            alive_answer_message = AliveAnswerMessage(self.bully_id).to_string()
+            logging.info("Responding alive message")
+            connection.sendall(alive_answer_message.encode(ENCODING))
         elif LeaderElectionMessage.is_election(election):
             logging.info("Leader election in progress")
             self.leader.value = NO_LEADER
-            answer_message = AnswerMessage(self.bully_id)
-            connection.sendall(answer_message.to_string().encode(ENCODING))
+            election_answer_message = ElectionAnswerMessage(self.bully_id)
+            connection.sendall(election_answer_message.to_string().encode(ENCODING))
             self._start_election()
-        elif AnswerMessage.is_election(election):
-            logging.info("Leader election answer message receive")
+        elif AliveAnswerMessage.is_election(election):
+            if self.im_leader():
+                logging.info("Slave is alive")
+            else:
+                logging.info("Leader is alive")
+        elif ElectionAnswerMessage.is_election(election):
+            logging.info("Election answer message receive")
         elif CoordinatorMessage.is_election(election):
             self.leader.value = election.id
             if self.im_leader():
