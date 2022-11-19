@@ -106,27 +106,21 @@ class BullyTCPMiddlware:
                     checking_tries+=1
             time.sleep(CHECK_FRECUENCY)
 
-    def _send_to_sups(self, message: str) -> list['bool']:
-        sends_sucessfully = list()
-        for instance_id in range(self.bully_id, self.bully_instances):
-            if (instance_id) != self.bully_id:
-                host = WATCHER_GROUP + "_" + str(instance_id)
-                port = self.port
-                try:
-                    with socket.create_connection((host, port)) as connection:
-                        connection.sendall(message.encode(ENCODING))
-                        expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                        response = self._recv_timeout(connection, expected_length_message, ELECTION_TIMEOUT)
-                        handled_successfully = self._handle_message(connection, response)
-                        sends_sucessfully.append(handled_successfully)
-                except socket.error as error:
-                    logging.error("Error while create connection to socket. Error: {}".format(error))
-                    sends_sucessfully.append(False)
-        return sends_sucessfully
+    def _send_to_infs(self, message: str) -> list['bool']:
+        instances = range(self.bully_id)
+        return self._send_to(message, instances)
 
-    def _send_to_all(self, message: str):
+    def _send_to_sups(self, message: str) -> list['bool']:
+        instances = range(self.bully_id, self.bully_instances)
+        return self._send_to(message, instances)
+
+    def _send_to_all(self, message: str) -> list['bool']:
+        instances = range(self.bully_instances)
+        return self._send_to(message, instances)
+    
+    def _send_to(self, message: str, instances: list['int']) -> list['bool']:
         sends_sucessfully = list()
-        for instance_id in range(self.bully_instances):
+        for instance_id in instances:
             if instance_id != self.bully_id:
                 host = WATCHER_GROUP + "_" + str(instance_id)
                 port = self.port
@@ -142,6 +136,7 @@ class BullyTCPMiddlware:
                     logging.error("Error while create connection to socket. Error: {}".format(error))
                     sends_sucessfully.append(False)
         return sends_sucessfully
+
 
     def _recv(self, connection: socket.socket, expected_length_message: int) -> str:
         data = b''
