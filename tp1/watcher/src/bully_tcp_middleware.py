@@ -5,7 +5,6 @@ import time
 from multiprocessing import Process, Value
 from src.election_message import ELECTION_LENGTH_MESSAGE, AliveAnswerMessage, AliveMessage, ElectionMessage, ErrorMessage, LeaderElectionMessage, ElectionAnswerMessage, CoordinatorMessage, TimeoutMessage
 
-WATCHER_GROUP = "watcher"
 BUFFER_SIZE = 1024
 ENCODING = "utf-8"
 
@@ -25,7 +24,7 @@ class BullyTCPMiddlware:
         * Slave - Slave
     """
 
-    def __init__(self, port, bully_id, bully_instances) -> None:
+    def __init__(self, port, bully_id, bully_instances, work_group) -> None:
         """
         Creates a new istance of BullyTCPMiddlware
         """
@@ -36,6 +35,7 @@ class BullyTCPMiddlware:
         self.port = int(port)
         self.bully_id = int(bully_id)
         self.bully_instances = int(bully_instances)
+        self.work_group = work_group
         self.start_process: Process = None
         self.check_process: Process = None
         self.listening_process: Process = None
@@ -145,7 +145,7 @@ class BullyTCPMiddlware:
            Return bool representation of send successfully.
         """
         sends_sucessfully = False
-        host = WATCHER_GROUP + "_" + str(instance_id)
+        host = self.work_group + "_" + str(instance_id)
         port = self.port
         logging.info("Sending [{}] to Host [{}] and Port [{}]".format(message, host, port))
         try:

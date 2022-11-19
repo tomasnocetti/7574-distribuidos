@@ -6,9 +6,11 @@ from src.heartbeats import Heartbeats
 from src.middleware import WatcherMiddlware
 from src.bully_tcp_worker import BullyTCPWorker
 
+WATCHER_GROUP = "watcher"
+
 class Watcher(BullyTCPWorker):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(WATCHER_GROUP)
         self.heartbeats = Heartbeats()
         self.docker = docker.from_env()
         signal.signal(signal.SIGTERM, self.exit_gracefully)
