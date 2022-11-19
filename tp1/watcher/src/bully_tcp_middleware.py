@@ -121,22 +121,28 @@ class BullyTCPMiddlware:
     def _send_to(self, message: str, instances: list['int']) -> list['bool']:
         sends_sucessfully = list()
         for instance_id in instances:
-            if instance_id != self.bully_id:
-                host = WATCHER_GROUP + "_" + str(instance_id)
-                port = self.port
-                logging.info("Sending [{}] to Host [{}] and Port [{}]".format(message, host, port))
-                try:
-                    with socket.create_connection((host, port)) as connection:
-                        connection.sendall(message.encode(ENCODING))
-                        expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
-                        response = self._recv_timeout(connection, expected_length_message, ELECTION_TIMEOUT)
-                        handled_successfully = self._handle_message(connection, response)
-                        sends_sucessfully.append(handled_successfully)
-                except socket.error as error:
-                    logging.error("Error while create connection to socket. Error: {}".format(error))
-                    sends_sucessfully.append(False)
+            send_sucessfully = self._send(message, instance_id)
+            sends_sucessfully.append(send_sucessfully)
         return sends_sucessfully
 
+    def _send(self, message: str, instance_id: int) -> bool:
+        """Send
+           Send message to a instance.
+           Return bool representation of send successfully
+        """
+        sends_sucessfully = False
+        host = WATCHER_GROUP + "_" + str(instance_id)
+        port = self.port
+        logging.info("Sending [{}] to Host [{}] and Port [{}]".format(message, host, port))
+        try:
+            with socket.create_connection((host, port)) as connection:
+                connection.sendall(message.encode(ENCODING))
+                expected_length_message = BASE_LENGTH_MESSAGE + len(str(self.bully_instances))
+                response = self._recv_timeout(connection, expected_length_message, ELECTION_TIMEOUT)
+                sends_sucessfully = self._handle_message(connection, response)
+        except socket.error as error:
+            logging.error("Error while create connection to socket. Error: {}".format(error))
+        return sends_sucessfully
 
     def _recv(self, connection: socket.socket, expected_length_message: int) -> str:
         data = b''
