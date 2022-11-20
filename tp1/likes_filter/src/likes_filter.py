@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import MessageEnd, VideoMessage
-from common.worker import Worker
 
 
-class LikesFilter(Worker):
+class LikesFilter(HeartbeathedWorker):
     def __init__(self, middleware, filter_qty) -> None:
         super().__init__(middleware)
         self.filter_qty = filter_qty
@@ -24,7 +24,8 @@ class LikesFilter(Worker):
         video = VideoMessage.decode(message)
 
         try:
-            if (video.content['likes'] != None and int(video.content['likes']) > self.filter_qty):
+            if (video.content['likes'] != None and int(video.content['likes']) >= self.filter_qty):
+                logging.debug(f"Found video that matches {video.content}")
                 self.middleware.send_video_message(message)
         except KeyError:
             logging.error(

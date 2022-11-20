@@ -21,5 +21,4 @@ class Worker():
     def exit_gracefully(self, *args):
         self.running = False
         self.middleware.close_connection()
-        logging.info(
-            'Exiting gracefully')
+        logging.info('Exiting gracefully')

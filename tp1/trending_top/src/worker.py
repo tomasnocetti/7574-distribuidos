@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import EndResult3, Result3
-from common.worker import Worker
 
 
-class TrendingTop(Worker):
+class TrendingTop(HeartbeathedWorker):
     def __init__(self, middleware, trending_instances) -> None:
         super().__init__(middleware)
         self.results_counter = 0
@@ -30,10 +30,10 @@ class TrendingTop(Worker):
         self.results_counter += 1
 
         if (self.results_counter == self.trending_instances):
-            message = Result3(self.top_date)
+            message = Result3(message.client_id, "FINAL_RESULT", self.top_date)
             self.middleware.send_result_message(message.pack())
 
-            end_message = EndResult3()
+            end_message = EndResult3(message.client_id, "FINAL_RESULT")
             self.middleware.send_result_message(end_message.pack())
             self.results_counter = 0
             self.top_date = ''

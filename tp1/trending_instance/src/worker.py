@@ -1,11 +1,11 @@
 import logging
 
-from common.message import EndResult3, MessageEnd, Result3, VideoMessage
-from common.worker import Worker
+from common.heartbeathed_worker import HeartbeathedWorker
+from common.message import MessageEnd, Result3, VideoMessage
 from datetime import datetime
 
 
-class TrendingInstance(Worker):
+class TrendingInstance(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
         self.dates = {}
@@ -16,10 +16,11 @@ class TrendingInstance(Worker):
     def recv_videos(self, message):
 
         if MessageEnd.is_message(message):
+            end_message = MessageEnd.decode(message)
             logging.info(
                 f'Finish Recv Videos: {len(self.dates)}')
 
-            self.process_and_send_results()
+            self.process_and_send_results(end_message.client_id)
             return
 
         video = VideoMessage.decode(message)
@@ -40,7 +41,7 @@ class TrendingInstance(Worker):
             logging.error(
                 f'Incorrect formatted value {video.content}')
 
-    def process_and_send_results(self):
+    def process_and_send_results(self, client_id):
 
         max_date = ''
         max_number = 0
@@ -50,7 +51,7 @@ class TrendingInstance(Worker):
                 max_number = self.dates[date]
                 max_date = date
 
-        result = Result3(f"{max_date},{max_number}")
+        result = Result3(client_id, "TODO:INSTANCE_ID", f"{max_date},{max_number}")
         self.middleware.send_result_message(result.pack())
 
         self.dates = {}

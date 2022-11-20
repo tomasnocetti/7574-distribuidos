@@ -1,10 +1,10 @@
 import logging
 
+from common.heartbeathed_worker import HeartbeathedWorker
 from common.message import EndResult1, MessageEnd, Result1, VideoMessage
-from common.worker import Worker
 
 
-class TagUnique(Worker):
+class TagUnique(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
         self.items = set()
@@ -17,7 +17,8 @@ class TagUnique(Worker):
         if MessageEnd.is_message(message):
             logging.info(
                 f'Finish Recv Videos')
-            end_message = EndResult1()
+            parsed_message = MessageEnd.decode(message)
+            end_message = EndResult1(parsed_message.client_id, '1')
             self.middleware.send_result_message(end_message.pack())
             return
 
@@ -29,9 +30,10 @@ class TagUnique(Worker):
             item = (video.content['video_id'],
                     video.content['title'], video.content['category'])
 
+            logging.info(item)
             if (tags != None and 'funny' in tags and not item in self.items):
                 self.items.add(item)
-                end_message = Result1(",".join(item))
+                end_message = Result1(video.client_id, video.message_id, ",".join(item))
                 self.middleware.send_result_message(end_message.pack())
 
                 # self.middleware.send_video_message(message)

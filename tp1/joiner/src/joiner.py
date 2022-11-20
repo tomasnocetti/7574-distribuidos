@@ -1,11 +1,10 @@
 import logging
-
-from common.message import CategoryMessage, FileMessage, MessageEnd, MessageStart, VideoMessage
-from common.worker import Worker
+from common.heartbeathed_worker import HeartbeathedWorker
+from common.message import CategoryMessage, FileMessage, MessageEnd, VideoMessage, BaseMessage
 from src.model import CategoryMapper
 
 
-class Joiner(Worker):
+class Joiner(HeartbeathedWorker):
     def __init__(self, middleware) -> None:
         super().__init__(middleware)
 
@@ -16,12 +15,13 @@ class Joiner(Worker):
         self.middleware.recv_video_message(self.recv_videos)
 
     def recv_categories(self, message):
-        logging.debug('New category message')
+        logging.info('New category message')
 
         if MessageEnd.is_message(message):
             logging.info(
                 f'Finish Recv Categories, recv {self.categories.len()} countries')
-            message = CategoryMessage(self.categories.len())
+            parsed_message = MessageEnd.decode(message)
+            message = CategoryMessage(parsed_message.client_id, self.categories.len())
             self.middleware.send_category_count(message.pack())
 
             self.middleware.stop_recv_category_message()

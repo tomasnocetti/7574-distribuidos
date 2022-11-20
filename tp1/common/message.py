@@ -1,6 +1,5 @@
 import json
-import logging
-
+import ast
 
 SEPARATOR = '|'
 
@@ -17,39 +16,64 @@ RESULT_1 = '1'
 RESULT_2 = '2'
 RESULT_3 = '3'
 
+'''
+    Returns the first element that matches the separator and the rest of the buffer
+'''
+
+
+def next_packed_element(buffer):
+    index = buffer.find(SEPARATOR)
+    if (index == -1):
+        return buffer, None
+
+    return buffer[:index], buffer[index + 1:]
+
 
 class BaseMessage:
+    def __init__(self, code, client_id, message_id=''):
+        self.code = code
+        self.client_id = client_id
+        self.message_id = message_id
+
     def pack(self):
-        return f'{self.CODE}'
-
-
-class MessageStart(BaseMessage):
-    def __init__(self) -> None:
-        self.CODE = MESSAGE_START
+        return f'{self.code}{SEPARATOR}{self.client_id}{SEPARATOR}{self.message_id}'
 
     @staticmethod
-    def is_message(buffer) -> bool:
-        return buffer[0] == MESSAGE_START
+    def decode(buffer):
+        code, buffer = next_packed_element(buffer)
+
+        client_id, buffer = next_packed_element(buffer)
+
+        message_id, buffer = next_packed_element(buffer)
+
+        return BaseMessage(code, client_id, message_id), buffer
 
 
 class MessageEnd(BaseMessage):
-    def __init__(self) -> None:
-        self.CODE = MESSAGE_END
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(MESSAGE_END, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
         return buffer[0] == MESSAGE_END
 
+    @classmethod
+    def decode(cls, buffer):
+        base, buffer = super().decode(buffer)
 
-class FileMessage():
+        return MessageEnd(base.client_id, base.message_id)
 
-    def __init__(self, file_name, file_content) -> None:
-        self.CODE = MESSAGE_FILE
+
+class FileMessage(BaseMessage):
+
+    def __init__(self, client_id, message_id, file_name, file_content) -> None:
+        super().__init__(MESSAGE_FILE, client_id, message_id)
+
         self.file_name = file_name
         self.file_content = file_content
 
     def pack(self):
-        return f'{self.CODE}{SEPARATOR}{self.file_name}{SEPARATOR}{self.file_content}'
+        return f'{super().pack()}{SEPARATOR}{self.file_name}{SEPARATOR}{self.file_content}'
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -57,19 +81,21 @@ class FileMessage():
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
-        index = content.find(SEPARATOR)
+        base, buffer = super().decode(buffer)
+        file_name, file_content = next_packed_element(buffer)
+        # file_content, buffer = next_packed_element(buffer)
 
-        return FileMessage(content[:index], content[index+1:])
+        return FileMessage(base.client_id, base.message_id, file_name, file_content)
 
 
-class VideoMessage():
-    def __init__(self, content: dict) -> None:
-        self.CODE = MESSAGE_VIDEO
+class VideoMessage(BaseMessage):
+    def __init__(self, client_id, message_id, content: dict) -> None:
+        super().__init__(MESSAGE_VIDEO, client_id, message_id)
+
         self.content = content
 
     def pack(self) -> str:
-        return f'{self.CODE}{SEPARATOR}{json.dumps(self.content)}'
+        return f'{super().pack()}{SEPARATOR}{json.dumps(self.content)}'
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -77,23 +103,23 @@ class VideoMessage():
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, json_content = super().decode(buffer)
 
-        return VideoMessage(json.loads(content))
+        return VideoMessage(base.client_id, base.message_id, json.loads(json_content))
 
 
-class BaseResult:
-    def __init__(self, code, content) -> None:
-        self.code = code
+class BaseResult(BaseMessage):
+    def __init__(self, code, client_id, message_id,  content) -> None:
+        super().__init__(code, client_id, message_id)
         self.content = content
 
     def pack(self) -> str:
-        return f'{self.code}{SEPARATOR}{self.content}'
+        return f'{super().pack()}{SEPARATOR}{self.content}'
 
 
 class CategoryMessage(BaseResult):
-    def __init__(self, content) -> None:
-        super().__init__(MESSAGE_CATEGORY_COUNT, content)
+    def __init__(self, client_id, content) -> None:
+        super().__init__(MESSAGE_CATEGORY_COUNT, client_id, '', content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -101,14 +127,14 @@ class CategoryMessage(BaseResult):
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, content = super().decode(buffer)
 
-        return CategoryMessage(content)
+        return CategoryMessage(base.client_id, content)
 
 
 class Result1(BaseResult):
-    def __init__(self, content) -> None:
-        super().__init__(RESULT_1, content)
+    def __init__(self, client_id, message_id, content) -> None:
+        super().__init__(RESULT_1, client_id, message_id, content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -116,19 +142,35 @@ class Result1(BaseResult):
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, content = super().decode(buffer)
 
-        return Result1(content)
+        return Result1(base.client_id, base.message_id, content)
+
+
+class BinaryFile():
+    def __init__(self, file_name, file_content):
+        self.file_name = file_name
+        self.file_content = file_content
+
+    def pack(self):
+        length = len(self.file_content)
+        return f'{self.file_name}{SEPARATOR}{length}{SEPARATOR}{self.file_content}'
+
+    @classmethod
+    def decode(self, buffer):
+        file_name, buffer = next_packed_element(buffer)
+        file_length, file_content = next_packed_element(buffer)
+
+        parsed_content = ast.literal_eval(file_content)
+
+        assert (len(parsed_content) == int(file_length))
+
+        return BinaryFile(file_name, parsed_content)
 
 
 class Result2(BaseResult):
-    def __init__(self, file_name, content) -> None:
-        super().__init__(RESULT_2, content)
-        self.file_name = file_name
-
-    def pack(self) -> str:
-        length = len(self.content)
-        return f'{self.code}{SEPARATOR}{self.file_name}{SEPARATOR}{length}{SEPARATOR}{self.content}'
+    def __init__(self, client_id, message_id, content: str) -> None:
+        super().__init__(RESULT_2, client_id, message_id, content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -136,20 +178,14 @@ class Result2(BaseResult):
 
     @classmethod
     def decode(cls, buffer):
-        content = buffer[2:]
-        index = content.find(SEPARATOR)
-        file_name = content[:index]
-        content = content[index+1:]
-        length_separator = content.find(SEPARATOR)
-        length = int(content[:length_separator])
-        content = content[length_separator+1:]
+        base, content = super().decode(buffer)
 
-        return Result2(file_name, content)
+        return Result2(base.client_id, base.message_id, content)
 
 
 class Result3(BaseResult):
-    def __init__(self, content) -> None:
-        super().__init__(RESULT_3, content)
+    def __init__(self, client_id, message_id, content) -> None:
+        super().__init__(RESULT_3, client_id, message_id, content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -157,15 +193,14 @@ class Result3(BaseResult):
 
     @classmethod
     def decode(cls, buffer: str):
-        content = buffer[2:]
+        base, content = super().decode(buffer)
 
-        return Result3(content)
+        return Result3(base.client_id, base.message_id, content)
 
 
 class EndResult1(BaseMessage):
-    def __init__(self) -> None:
-        super().__init__()
-        self.CODE = END_RESULT_1
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(END_RESULT_1, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -173,9 +208,8 @@ class EndResult1(BaseMessage):
 
 
 class EndResult2(BaseMessage):
-    def __init__(self) -> None:
-        super().__init__()
-        self.CODE = END_RESULT_2
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(END_RESULT_2, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -183,9 +217,8 @@ class EndResult2(BaseMessage):
 
 
 class EndResult3(BaseMessage):
-    def __init__(self) -> None:
-        super().__init__()
-        self.CODE = END_RESULT_3
+    def __init__(self, client_id, message_id) -> None:
+        super().__init__(END_RESULT_3, client_id, message_id)
 
     @staticmethod
     def is_message(buffer) -> bool:
