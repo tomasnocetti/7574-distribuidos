@@ -1,5 +1,5 @@
 import json
-
+import ast
 
 SEPARATOR = '|'
 
@@ -104,7 +104,7 @@ class VideoMessage(BaseMessage):
     @classmethod
     def decode(cls, buffer: str):
         base, json_content = super().decode(buffer)
-        
+
         return VideoMessage(base.client_id, base.message_id, json.loads(json_content))
 
 
@@ -129,8 +129,7 @@ class CategoryMessage(BaseResult):
     def decode(cls, buffer: str):
         base, content = super().decode(buffer)
 
-
-        return CategoryMessage(base.client_id, base.message_id, content)
+        return CategoryMessage(base.client_id, content)
 
 
 class Result1(BaseResult):
@@ -148,14 +147,30 @@ class Result1(BaseResult):
         return Result1(base.client_id, base.message_id, content)
 
 
-class Result2(BaseResult):
-    def __init__(self, file_name, content) -> None:
-        super().__init__(RESULT_2, content)
+class BinaryFile():
+    def __init__(self, file_name, file_content):
         self.file_name = file_name
+        self.file_content = file_content
 
-    def pack(self) -> str:
-        length = len(self.content)
-        return f'{self.code}{SEPARATOR}{self.file_name}{SEPARATOR}{length}{SEPARATOR}{self.content}'
+    def pack(self):
+        length = len(self.file_content)
+        return f'{self.file_name}{SEPARATOR}{length}{SEPARATOR}{self.file_content}'
+
+    @classmethod
+    def decode(self, buffer):
+        file_name, buffer = next_packed_element(buffer)
+        file_length, file_content = next_packed_element(buffer)
+
+        parsed_content = ast.literal_eval(file_content)
+
+        assert (len(parsed_content) == int(file_length))
+
+        return BinaryFile(file_name, parsed_content)
+
+
+class Result2(BaseResult):
+    def __init__(self, client_id, message_id, content: str) -> None:
+        super().__init__(RESULT_2, client_id, message_id, content)
 
     @staticmethod
     def is_message(buffer) -> bool:
@@ -163,15 +178,9 @@ class Result2(BaseResult):
 
     @classmethod
     def decode(cls, buffer):
-        content = buffer[2:]
-        index = content.find(SEPARATOR)
-        file_name = content[:index]
-        content = content[index+1:]
-        length_separator = content.find(SEPARATOR)
-        length = int(content[:length_separator])
-        content = content[length_separator+1:]
+        base, content = super().decode(buffer)
 
-        return Result2(file_name, content)
+        return Result2(base.client_id, base.message_id, content)
 
 
 class Result3(BaseResult):

@@ -1,7 +1,7 @@
 import logging
 
 from common.heartbeathed_worker import HeartbeathedWorker
-from common.message import EndResult2, MessageEnd, Result2, VideoMessage
+from common.message import EndResult2, MessageEnd, Result2, VideoMessage, BinaryFile
 from requests import get  # to make GET request
 
 BUFFER_SIZE = 50
@@ -19,12 +19,13 @@ class DownloaderInstance(HeartbeathedWorker):
     def recv_videos(self, message):
 
         if MessageEnd.is_message(message):
+            parsed_message = MessageEnd.decode(message)
             logging.info(
                 f'Finish Recv Videos')
             self.done_instances += 1
 
             if (self.done_instances == self.instances):
-                res = EndResult2()
+                res = EndResult2(parsed_message.client_id, '')
                 self.middleware.send_result_message(res.pack())
                 self.done_instances = 0
 
@@ -41,7 +42,7 @@ class DownloaderInstance(HeartbeathedWorker):
 
                 file_name = f'{video_id}_{file}'
                 self.send_thumbnail(
-                    file_name, response.content)
+                    video.client_id, file_name, response.content)
 
         except KeyError:
             logging.error(
@@ -50,7 +51,7 @@ class DownloaderInstance(HeartbeathedWorker):
             logging.error(
                 f'Incorrect formatted value {video.content}')
 
-    def send_thumbnail(self, file_name, content):
+    def send_thumbnail(self, client_id, file_name, content):
         index = 0
         # print(content)
         while index < len(content):
@@ -59,7 +60,9 @@ class DownloaderInstance(HeartbeathedWorker):
             if (next_index > len(content)):
                 next_index = len(content)
 
-            res = Result2(file_name, content[index:next_index])
+            msg_content = BinaryFile(
+                file_name, content[index:next_index])
+            res = Result2(client_id, str(index), msg_content.pack())
             self.middleware.send_result_message(res.pack())
 
             index = next_index

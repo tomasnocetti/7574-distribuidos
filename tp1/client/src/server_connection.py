@@ -2,11 +2,9 @@ import csv
 import io
 import logging
 import os
-import ast
-import os
 import uuid
 
-from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, Result1, Result2, Result3
+from common.message import EndResult1, EndResult2, EndResult3, FileMessage, MessageEnd, Result1, Result2, Result3, BinaryFile
 from common.worker import Worker
 from common.utils import uid
 
@@ -162,10 +160,10 @@ class ServerConnection(Worker):
             return
 
         message = Result2.decode(message)
-        file_name = message.file_name
+        binary_chunk = BinaryFile.decode(message.content)
 
-        with open(f'{self.thumbnail_path}/{file_name}', 'ab+') as file:
-            file.write(ast.literal_eval(message.content))
+        with open(f'{self.thumbnail_path}/{binary_chunk.file_name}', 'ab+') as file:
+            file.write(binary_chunk.file_content)
 
     def process_result3_message(self, message):
         if not Result3.is_message(message):
